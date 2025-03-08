@@ -6,8 +6,10 @@
 #include <unordered_set>
 #include <algorithm>
 
+typedef unsigned int uint;
+
 // Function to generate k-shingles from text
-std::unordered_set<std::string> generateShingles(const std::string& text, int k) {
+std::unordered_set<std::string> generateShingles(const std::string& text, uint k) {
     std::unordered_set<std::string> shingles;
     
     // Generate k-shingles (substrings of length k)
