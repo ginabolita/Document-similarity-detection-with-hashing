@@ -5,17 +5,42 @@
 #include <set>
 #include <unordered_set>
 #include <algorithm>
+#include <sstream>
+
 
 typedef unsigned int uint;
+
+std::string normalize(const std::string& word) {
+    std::string result;
+    result.reserve(word.length());
+    for (char c : word) {
+        if (isalpha(c)) {
+            result += tolower(c);
+        }
+    }
+    return result;
+}
 
 // Function to generate k-shingles from text
 std::unordered_set<std::string> generateShingles(const std::string& text, uint k) {
     std::unordered_set<std::string> shingles;
+    std::vector<std::string> words;
+    std::stringstream ss(text);
+    std::string word;
     
-    // Generate k-shingles (substrings of length k)
-    if (text.length() >= k) {
-        for (size_t i = 0; i <= text.length() - k; i++) {
-            std::string shingle = text.substr(i, k);
+    // Tokenize the text into words
+    while (ss >> word) {
+        words.push_back(normalize(word));
+    }
+    
+    // Generate k-word shingles
+    if (words.size() >= k) {
+        for (size_t i = 0; i <= words.size() - k; i++) {
+            std::string shingle;
+            for (size_t j = 0; j < k; j++) {
+                if (j > 0) shingle += " "; // Separate words with a space
+                shingle += words[i + j];
+            }
             shingles.insert(shingle);
         }
     }

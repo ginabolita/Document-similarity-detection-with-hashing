@@ -12,12 +12,13 @@ def generate_random_text(word_count: int, min_word_length: int = 3, max_word_len
         words.append(word)
     return ' '.join(words)
 
-def get_character_shingles(text: str, k: int) -> Set[str]:
-    """Extract character-level k-shingles from text."""
+def get_word_shingles(text: str, k: int) -> Set[str]:
+    """Extract word-level k-shingles from text."""
+    words = text.split()
     shingles = set()
-    if len(text) >= k:
-        for i in range(len(text) - k + 1):
-            shingle = text[i:i+k]
+    if len(words) >= k:
+        for i in range(len(words) - k + 1):
+            shingle = ' '.join(words[i:i+k])
             shingles.add(shingle)
     return shingles
 
@@ -29,133 +30,125 @@ def calculate_jaccard_similarity(set1: Set[str], set2: Set[str]) -> float:
 
 def generate_texts_with_target_similarity(target_similarity: float, k: int, tolerance: float = 0.01) -> Tuple[str, str, float]:
     """
-    Generate two texts with approximately the target Jaccard similarity using character-level shingles.
+    Generate two texts with approximately the target Jaccard similarity using word-level shingles.
     
     Args:
         target_similarity: The desired Jaccard similarity (0.0 to 1.0)
-        k: Size of character shingles
+        k: Size of word shingles
         tolerance: Acceptable deviation from target similarity
         
     Returns:
         Tuple of (text1, text2, actual_similarity)
     """
-    # Generate a longer base text to ensure we have enough shingles
-    base_words = 200
+    # Generate a base text
+    base_words = 500  # Generate more words to have enough shingles
     text1 = generate_random_text(base_words)
-    shingles1 = get_character_shingles(text1, k)
+    words1 = text1.split()
+    shingles1 = get_word_shingles(text1, k)
     
-    # If target similarity is 0, create completely different text
+    # Edge cases
     if target_similarity == 0:
         text2 = generate_random_text(base_words)
-        shingles2 = get_character_shingles(text2, k)
+        shingles2 = get_word_shingles(text2, k)
         actual_similarity = calculate_jaccard_similarity(shingles1, shingles2)
         return text1, text2, actual_similarity
     
-    # If target similarity is 1, return the same text
     if target_similarity == 1:
         return text1, text1, 1.0
     
-    # For any other similarity, we need to create a partially similar text
-    shingles1_list = list(shingles1)
-    
-    # Calculate how many shared shingles we need
-    # If we have S1 shingles in text1, and want similarity s
-    # and will have S2 shingles in text2,
-    # then s = |S1 ∩ S2| / |S1 ∪ S2| = |S1 ∩ S2| / (|S1| + |S2| - |S1 ∩ S2|)
-    
+    # For other similarities, we'll blend parts of text1 with new text
     best_text2 = ""
     best_similarity = 0
     best_difference = float('inf')
     
-    for attempt in range(100):  # Try multiple approaches
-        # We'll determine approximately how many shared shingles we need
-        # Let's say we'll have |S1| total shingles for each text, and |S1∩S2| shared shingles
-        # Then: s = |S1∩S2| / (2*|S1| - |S1∩S2|)
-        # Solving for |S1∩S2|: |S1∩S2| = 2s*|S1| / (1 + s)
-        shared_count = int((2 * target_similarity * len(shingles1)) / (1 + target_similarity))
-        shared_count = min(shared_count, len(shingles1))
+    for attempt in range(1000):
+        # Calculate number of shared shingles needed
+        # If we have S1 shingles in text1, S2 shingles in text2, and S_shared shared shingles,
+        # then similarity = S_shared / (S1 + S2 - S_shared)
+        # Assuming S1 ≈ S2 (similar text lengths), we can solve for S_shared:
+        # S_shared = target * (2*S1 - S_shared)
+        # S_shared * (1 + target) = 2 * target * S1
+        # S_shared = (2 * target * S1) / (1 + target)
         
-        # Select shared shingles
-        shared_shingles = set(random.sample(shingles1_list, shared_count))
+        total_shingles = len(shingles1)
+        shared_shingles_needed = int((2 * target_similarity * total_shingles) / (1 + target_similarity))
+        shared_shingles_needed = min(shared_shingles_needed, total_shingles)
         
-        # Generate a new text2
-        # Start with a random text
-        text2 = generate_random_text(base_words)
-        shingles2 = get_character_shingles(text2, k)
-        
-        # Calculate current similarity
-        current_similarity = calculate_jaccard_similarity(shingles1, shingles2)
-        
-        # If we need to increase similarity, replace parts of text2 with parts of text1
-        if current_similarity < target_similarity:
-            # Convert texts to character lists for easier manipulation
-            text2_chars = list(text2)
-            text1_chars = list(text1)
+        # Select which shingles to share
+        shingles1_list = list(shingles1)
+        if shared_shingles_needed > 0:
+            shared_shingles = set(random.sample(shingles1_list, shared_shingles_needed))
+        else:
+            shared_shingles = set()
             
-            # We'll replace random sections of text2 with sections from text1
-            # Gradually increase section length until we reach desired similarity
-            for section_length in range(k, len(text1) // 2, k):
-                for i in range(10):  # Try several replacement points
-                    if len(text2_chars) <= section_length:
-                        continue
-                        
-                    # Choose a random position in text2 to replace
-                    pos2 = random.randint(0, len(text2_chars) - section_length)
+        # Create a new text that shares exactly these shingles
+        if shared_shingles:
+            # Extract words from shared shingles
+            shared_words = set()
+            for shingle in shared_shingles:
+                for word in shingle.split():
+                    shared_words.add(word)
                     
-                    # Choose a random section from text1
-                    pos1 = random.randint(0, len(text1_chars) - section_length)
-                    
-                    # Replace the section
-                    original_section = text2_chars[pos2:pos2+section_length]
-                    text2_chars[pos2:pos2+section_length] = text1_chars[pos1:pos1+section_length]
-                    
-                    # Calculate new similarity
-                    new_text2 = ''.join(text2_chars)
-                    new_shingles2 = get_character_shingles(new_text2, k)
-                    new_similarity = calculate_jaccard_similarity(shingles1, new_shingles2)
-                    
-                    # If we've gone too far, revert and try again
-                    if new_similarity > target_similarity + tolerance:
-                        text2_chars[pos2:pos2+section_length] = original_section
-                        continue
-                    
-                    # Update our text and similarity
-                    text2 = new_text2
-                    shingles2 = new_shingles2
-                    current_similarity = new_similarity
-                    
-                    # If we're within tolerance, we're done
-                    if abs(current_similarity - target_similarity) <= tolerance:
-                        return text1, text2, current_similarity
+            # Create a word mapping from text1
+            word_positions = {}
+            for i, word in enumerate(words1):
+                if word not in word_positions:
+                    word_positions[word] = []
+                word_positions[word].append(i)
+            
+            # Determine which parts of text1 to keep
+            # We'll keep all words that are part of a shared shingle
+            keep_positions = set()
+            for i in range(len(words1) - k + 1):
+                shingle = ' '.join(words1[i:i+k])
+                if shingle in shared_shingles:
+                    for j in range(i, i+k):
+                        keep_positions.add(j)
+            
+            # Create a new text2 that keeps these positions but randomly fills others
+            words2 = [None] * len(words1)  # Initialize with None placeholders
+            
+            # First, keep the words at positions we want to preserve
+            for pos in keep_positions:
+                words2[pos] = words1[pos]
+            
+            # Fill in the rest with random words
+            for i in range(len(words2)):
+                if words2[i] is None:
+                    word_length = random.randint(3, 10)
+                    words2[i] = ''.join(random.choices(string.ascii_lowercase, k=word_length))
+            
+            text2 = ' '.join(words2)
+        else:
+            # For very low similarities, just create a completely different text
+            text2 = generate_random_text(base_words)
+            
+        # Calculate actual similarity
+        shingles2 = get_word_shingles(text2, k)
+        actual_similarity = calculate_jaccard_similarity(shingles1, shingles2)
         
-        # If we need to decrease similarity, replace shared shingles
-        elif current_similarity > target_similarity:
-            # Generate entirely new text and try again
-            continue
-        
+        # Check if we're within tolerance
+        difference = abs(actual_similarity - target_similarity)
+        if difference <= tolerance:
+            return text1, text2, actual_similarity
+            
         # Track the best attempt
-        difference = abs(current_similarity - target_similarity)
         if difference < best_difference:
             best_difference = difference
             best_text2 = text2
-            best_similarity = current_similarity
-            
-            # If we're within tolerance, we're done
-            if difference <= tolerance:
-                return text1, text2, current_similarity
+            best_similarity = actual_similarity
     
-    # If we couldn't get within tolerance, return our best attempt
     print(f"Warning: Could not achieve exact target similarity. Best: {best_similarity:.4f}")
     return text1, best_text2, best_similarity
 
 def main():
     parser = argparse.ArgumentParser(description='Generate two texts with a target Jaccard similarity')
     parser.add_argument('--target', type=float, default=0.5, help='Target Jaccard similarity (0.0-1.0)')
-    parser.add_argument('--shingle-size', type=int, default=3, help='Size of character shingles (k)')
+    parser.add_argument('--shingle-size', type=int, default=3, help='Size of word shingles (k)')
     parser.add_argument('--output1', type=str, default='text1.txt', help='Output file for first text')
     parser.add_argument('--output2', type=str, default='text2.txt', help='Output file for second text')
     parser.add_argument('--tolerance', type=float, default=0.02, help='Acceptable deviation from target similarity')
-    parser.add_argument('--verify', action='store_true', help='Verify similarity with C++ algorithm')
+    parser.add_argument('--verify', action='store_true', help='Print verification information')
     
     args = parser.parse_args()
     
@@ -167,21 +160,7 @@ def main():
         args.target, args.shingle_size, args.tolerance
     )
     
-    # Print sample of each text
-    print("\nSample of text1 (first 100 chars):")
-    print(text1[:100] + "...")
-    print("\nSample of text2 (first 100 chars):")
-    print(text2[:100] + "...")
-    
-    # Count shingles in each text
-    shingles1 = get_character_shingles(text1, args.shingle_size)
-    shingles2 = get_character_shingles(text2, args.shingle_size)
-    
-    print(f"\nText1 unique {args.shingle_size}-shingles: {len(shingles1)}")
-    print(f"Text2 unique {args.shingle_size}-shingles: {len(shingles2)}")
-    print(f"Shared shingles: {len(shingles1.intersection(shingles2))}")
-    print(f"Union of shingles: {len(shingles1.union(shingles2))}")
-    
+    # Save the texts to files
     with open(args.output1, 'w') as f1:
         f1.write(text1)
     
@@ -190,14 +169,35 @@ def main():
     
     print(f"\nGenerated two texts with Jaccard similarity: {actual_similarity:.4f}")
     print(f"Target similarity was: {args.target:.4f}")
-    print(f"Text 1 saved to: {args.output1}")
-    print(f"Text 2 saved to: {args.output2}")
-    print(f"Character shingle size used: {args.shingle_size}")
     
     if args.verify:
-        # You could add code here to call your C++ program to verify
-        print("\nTo verify with your C++ program, run:")
-        print(f"./jaccard_similarity {args.output1} {args.output2} {args.shingle_size}")
+        # Print verification information
+        shingles1 = get_word_shingles(text1, args.shingle_size)
+        shingles2 = get_word_shingles(text2, args.shingle_size)
+        intersection = shingles1.intersection(shingles2)
+        
+        print(f"\nText 1 words: {len(text1.split())}")
+        print(f"Text 2 words: {len(text2.split())}")
+        print(f"Text 1 unique {args.shingle_size}-shingles: {len(shingles1)}")
+        print(f"Text 2 unique {args.shingle_size}-shingles: {len(shingles2)}")
+        print(f"Shared shingles: {len(intersection)}")
+        print(f"Union of shingles: {len(shingles1.union(shingles2))}")
+        
+        # Print sample of shared shingles
+        if intersection:
+            print("\nSample of shared shingles:")
+            for shingle in list(intersection)[:5]:
+                print(f"  - '{shingle}'")
+    
+    print(f"\nText 1 saved to: {args.output1}")
+    print(f"Text 2 saved to: {args.output2}")
+    print(f"Word shingle size used: {args.shingle_size}")
+    
+    # Print instruction to verify with C++ program
+    print("\nNotes for using with your C++ program:")
+    print("1. Your C++ program uses character-level shingles by default")
+    print("2. To use word-level shingles, you would need to modify your C++ code")
+    print("3. Different shingle types will produce different similarity values")
 
 if __name__ == "__main__":
     main()
