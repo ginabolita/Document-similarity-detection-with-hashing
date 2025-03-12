@@ -10,13 +10,41 @@
 #include <nlohmann/json.hpp> 
 using namespace nlohmann;
 
-
 typedef unsigned int uint;
 std::unordered_set<std::string> stopwords;
+
+
+
+//StopWord Zone --------------------------------------------------------------------------
 
 bool is_stopword(const std::string& word) {
     return stopwords.find(word) != stopwords.end();
 }
+
+std::unordered_set<std::string> loadStopwords(const std::string& filename) {
+    std::unordered_set<std::string> stopwords;
+    std::ifstream file(filename);
+    if (!file) {
+        std::cerr << "Error opening file: " << filename << std::endl;
+        return stopwords;
+    }
+
+    json j;
+    file >> j;  // Parse JSON
+
+    for (const auto& word : j) {
+        stopwords.insert(word);
+    }
+
+    return stopwords;
+}
+//-----------------------------------------------------------------------------------
+
+
+
+
+
+// Format Zone //--------------------------------------------------------------------
 
 std::string remove_punctuation(std::string text)
 {
@@ -46,25 +74,27 @@ std::string normalize(const std::string& word) {
     return result;
 }
 
-
-std::unordered_set<std::string> loadStopwords(const std::string& filename) {
-    std::unordered_set<std::string> stopwords;
+// Read content from file
+std::string readFile(const std::string& filename) {
     std::ifstream file(filename);
-    if (!file) {
+    if (!file.is_open()) {
         std::cerr << "Error opening file: " << filename << std::endl;
-        return stopwords;
+        return "";
     }
-
-    json j;
-    file >> j;  // Parse JSON
-
-    for (const auto& word : j) {
-        stopwords.insert(word);
+    
+    std::string content;
+    std::string line;
+    while (std::getline(file, line)) {
+        content += line + " ";
     }
-
-    return stopwords;
+    
+    return content;
 }
+//-----------------------------------------------------------------------------------
 
+
+
+// Algorithm Zone -------------------------------------------------------------------
 
 // Function to generate k-shingles from text
 std::unordered_set<std::string> generateShingles(const std::string& text, uint k) {
@@ -123,22 +153,9 @@ double calculateJaccardSimilarity(const std::unordered_set<std::string>& set1,
     return unionSize > 0 ? static_cast<double>(intersection) / unionSize : 0.0;
 }
 
-// Read content from file
-std::string readFile(const std::string& filename) {
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        std::cerr << "Error opening file: " << filename << std::endl;
-        return "";
-    }
-    
-    std::string content;
-    std::string line;
-    while (std::getline(file, line)) {
-        content += line + " ";
-    }
-    
-    return content;
-}
+//-----------------------------------------------------------------------------------
+
+
 
 int main(int argc, char* argv[]) {
 
