@@ -7,13 +7,20 @@
 #include <algorithm>
 #include <sstream>
 
+#include <nlohmann/json.hpp> 
+using namespace nlohmann;
+
 
 typedef unsigned int uint;
+std::unordered_set<std::string> stopwords;
 
+bool is_stopword(const std::string& word) {
+    return stopwords.find(word) != stopwords.end();
+}
 
-std::string remove_punctuation(string text)
+std::string remove_punctuation(std::string text)
 {
-    string newtext;
+    std::string newtext;
     for (int i = 0; i < text.size(); ++i)
     {
         if (text[i] == '.' || text[i] == ',' || text[i] == '!' || text[i] == '?' || text[i] == ';' || text[i] == ':')
@@ -39,6 +46,26 @@ std::string normalize(const std::string& word) {
     return result;
 }
 
+
+std::unordered_set<std::string> loadStopwords(const std::string& filename) {
+    std::unordered_set<std::string> stopwords;
+    std::ifstream file(filename);
+    if (!file) {
+        std::cerr << "Error opening file: " << filename << std::endl;
+        return stopwords;
+    }
+
+    json j;
+    file >> j;  // Parse JSON
+
+    for (const auto& word : j) {
+        stopwords.insert(word);
+    }
+
+    return stopwords;
+}
+
+
 // Function to generate k-shingles from text
 std::unordered_set<std::string> generateShingles(const std::string& text, uint k) {
     std::unordered_set<std::string> shingles;
@@ -47,8 +74,13 @@ std::unordered_set<std::string> generateShingles(const std::string& text, uint k
     std::string word;
     
     // Tokenize the text into words
-    while (ss >> word) {
-        words.push_back(normalize(word));
+    while (ss >> word)
+    {
+        //tenim en compte si es una stopword abans de tot
+        if (!is_stopword(normalize(word))){
+            words.push_back(normalize(word));
+        }
+
     }
     
     // Generate k-word shingles
@@ -63,6 +95,13 @@ std::unordered_set<std::string> generateShingles(const std::string& text, uint k
         }
     }
     
+    //print shingles
+    for (auto shingle : shingles){
+        std::cout << shingle << " ";
+    }
+    std::cout << std::endl;
+
+
     return shingles;
 }
 
@@ -102,6 +141,9 @@ std::string readFile(const std::string& filename) {
 }
 
 int main(int argc, char* argv[]) {
+
+    stopwords = loadStopwords("stopwords-ca.json");
+    
     if (argc != 4) {
         std::cout << "Usage: " << argv[0] << " <file1> <file2> <k>" << std::endl;
         std::cout << "where k is the shingle size" << std::endl;
