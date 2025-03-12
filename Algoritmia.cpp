@@ -21,7 +21,8 @@ vector<pair<int, int>> hashCoefficients; // [a, b] for funcionhash(x) = (ax + b)
 int p;                                   // Prime number for hash functions
 unordered_set<string> stopwords;         // Stopwords
 
-// Sector Tratamiento StopWords
+
+// StopWordsZone ------------------------------------------------------------------------
 
 // Check if a word is a stopword
 bool is_stopword(const string &word)
@@ -51,7 +52,77 @@ unordered_set<string> loadStopwords(const string &filename)
     return stopwords;
 }
 
-//
+//-----------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+//Format Zone ----------------------------------------------------------------------------
+
+// Quita signos de puntuacion y mayusculas
+string normalize(const string &word)
+{
+    string result;
+    result.reserve(word.length());
+    for (char c : word)
+    {
+        if (isalpha(c))
+        {
+            result += tolower(c);
+        }
+    }
+    return result;
+}
+
+// Function to read text from a file
+string readFromFile(const string &filename)
+{
+    ifstream file(filename);
+    if (!file.is_open())
+    {
+        cerr << "Error opening file: " << filename << endl;
+        return "";
+    }
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    file.close();
+
+    return buffer.str();
+}
+
+// Read content from file
+std::string readFile(const std::string &filename)
+{
+    std::ifstream file(filename);
+    if (!file.is_open())
+    {
+        std::cerr << "Error opening file: " << filename << std::endl;
+        return "";
+    }
+
+    std::string content;
+    std::string line;
+    while (std::getline(file, line))
+    {
+        content += line + " ";
+    }
+
+    return content;
+}
+
+// Function to check if a string is a file path
+bool isFilePath(const string &str)
+{
+    return (str.find(".txt") != string::npos ||
+            str.find(".doc") != string::npos ||
+            str.find(".md") != string::npos);
+}
 
 // Optimized function to find the next prime after n
 int nextPrime(int n)
@@ -88,6 +159,19 @@ int nextPrime(int n)
     }
 }
 
+//----------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+// Algoritmo Zone ---------------------------------------------------------------------------
+
 // Initialize hash functions with random coefficients
 void initializeHashFunctions()
 {
@@ -103,21 +187,6 @@ void initializeHashFunctions()
     {
         hashCoefficients.push_back({dis(gen), dis(gen)}); // {Random a, Random b}
     }
-}
-
-// Quita signos de puntuacion y mayusculas
-string normalize(const string &word)
-{
-    string result;
-    result.reserve(word.length());
-    for (char c : word)
-    {
-        if (isalpha(c))
-        {
-            result += tolower(c);
-        }
-    }
-    return result;
 }
 
 // Function to process text and extract k-shingles
@@ -207,50 +276,9 @@ float SimilaridadDeJaccard(const vector<int> &signature1, const vector<int> &sig
     return static_cast<float>(iguales) / numHashFunctions;
 }
 
-// Function to read text from a file
-string readFromFile(const string &filename)
-{
-    ifstream file(filename);
-    if (!file.is_open())
-    {
-        cerr << "Error opening file: " << filename << endl;
-        return "";
-    }
+//-------------------------------------------------------------------------------------------
 
-    stringstream buffer;
-    buffer << file.rdbuf();
-    file.close();
 
-    return buffer.str();
-}
-
-// Function to check if a string is a file path
-bool isFilePath(const string &str)
-{
-    return (str.find(".txt") != string::npos ||
-            str.find(".doc") != string::npos ||
-            str.find(".md") != string::npos);
-}
-
-// Read content from file
-std::string readFile(const std::string &filename)
-{
-    std::ifstream file(filename);
-    if (!file.is_open())
-    {
-        std::cerr << "Error opening file: " << filename << std::endl;
-        return "";
-    }
-
-    std::string content;
-    std::string line;
-    while (std::getline(file, line))
-    {
-        content += line + " ";
-    }
-
-    return content;
-}
 
 int main(int argc, char *argv[])
 {
