@@ -10,6 +10,24 @@
 
 typedef unsigned int uint;
 
+
+std::string remove_punctuation(string text)
+{
+    string newtext;
+    for (int i = 0; i < text.size(); ++i)
+    {
+        if (text[i] == '.' || text[i] == ',' || text[i] == '!' || text[i] == '?' || text[i] == ';' || text[i] == ':')
+        {
+            newtext += ' ';
+        }
+        else
+        {
+            newtext += text[i];
+        }
+    }
+    return newtext;
+}
+
 std::string normalize(const std::string& word) {
     std::string result;
     result.reserve(word.length());
@@ -100,6 +118,9 @@ int main(int argc, char* argv[]) {
     // Read input files
     std::string text1 = readFile(argv[1]);
     std::string text2 = readFile(argv[2]);
+
+    text1 = remove_punctuation(text1);
+    text2 = remove_punctuation(text2);
     
     if (text1.empty() || text2.empty()) {
         std::cerr << "Error: One or both input files are empty or could not be read." << std::endl;
