@@ -1,10 +1,10 @@
-all: JaccardBruteForce Algoritmia LSH
+all: JaccardBruteForce MinHash LSH
 
 JaccardBruteForce:	JaccardBruteForce.cpp
 	g++ -O3 -Wall JaccardBruteForce.cpp -o JaccardBruteForce
 
-Algoritmia: Algoritmia.cpp
-	g++ -O3 -Wall Algoritmia.cpp -o Algoritmia
+MinHash: MinHash.cpp
+	g++ -O3 -Wall MinHash.cpp -o MinHash
 
 LSH: LSH.cpp
 	g++ -O3 -Wall LSH.cpp -o LSH
