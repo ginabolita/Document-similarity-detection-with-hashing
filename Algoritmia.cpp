@@ -202,7 +202,7 @@ void tratar(const string &texto, unordered_set<string> &kShingles)
         word = normalize(word);
         if (!is_stopword(word))
         {
-            cout << word << " ";
+            //cout << word << " ";
             if (word.empty())
                 continue; // Skip empty words after normalization
 
@@ -341,8 +341,8 @@ int main(int argc, char *argv[])
     cout << "Jaccard Similarity: " << similarity * 100 << "%" << endl;
 
     // Additional statistics
-    cout << "Número de k-shingles en texto 1: " << KT1.size() << endl;
-    cout << "Número de k-shingles en texto 2: " << KT2.size() << endl;
+    //cout << "Número de k-shingles en texto 1: " << KT1.size() << endl;
+    //cout << "Número de k-shingles en texto 2: " << KT2.size() << endl;
 
     return 0;
 }
