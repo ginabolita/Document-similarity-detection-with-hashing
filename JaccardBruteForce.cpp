@@ -126,11 +126,12 @@ std::unordered_set<std::string> generateShingles(const std::string& text, uint k
     }
     
     //print shingles
+    /*
     for (auto shingle : shingles){
         std::cout << shingle << " ";
     }
     std::cout << std::endl;
-
+    */
 
     return shingles;
 }
@@ -194,8 +195,8 @@ int main(int argc, char* argv[]) {
     double similarity = calculateJaccardSimilarity(shingles1, shingles2);
     
     // Output results
-    std::cout << "Number of unique shingles in document 1: " << shingles1.size() << std::endl;
-    std::cout << "Number of unique shingles in document 2: " << shingles2.size() << std::endl;
+    //std::cout << "Number of unique shingles in document 1: " << shingles1.size() << std::endl;
+    //std::cout << "Number of unique shingles in document 2: " << shingles2.size() << std::endl;
     std::cout << "Jaccard similarity: " << similarity << std::endl;
     
     return 0;
