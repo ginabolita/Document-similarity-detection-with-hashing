@@ -1,10 +1,18 @@
-all: JaccardBruteForce MinHash LSH
+all: jaccardBruteForce jaccardMinHash jaccardLSH
 
-JaccardBruteForce:	JaccardBruteForce.cpp
-	g++ -O3 -Wall JaccardBruteForce.cpp -o JaccardBruteForce
+jaccardBruteForce: jaccardBruteForce.cpp
+	g++ -O3 -Wall jaccardBruteForce.cpp -o jaccardBruteForce
 
-MinHash: MinHash.cpp
-	g++ -O3 -Wall MinHash.cpp -o MinHash
+jaccardMinHash: jaccardMinHash.cpp
+	g++ -O3 -Wall jaccardMinHash.cpp -o jaccardMinHash
 
-LSH: LSH.cpp
-	g++ -O3 -Wall LSH.cpp -o LSH
+jaccardLSH: jaccardLSH.cpp
+	g++ -O3 -Wall jaccardLSH.cpp -o jaccardLSH
+
+clean:
+	rm -f jaccardBruteForce jaccardMinHash jaccardLSH
+
+distclean: clean
+	rm -f *.o
+
+.PHONY: all clean distclean
