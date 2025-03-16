@@ -1,4 +1,4 @@
-all: jaccardBruteForce jaccardMinHash jaccardLSH generateDocuments
+all: jaccardBruteForce jaccardMinHash jaccardLSH exp1_genRandPerm exp2_genRandShingles
 
 jaccardBruteForce: jaccardBruteForce.cpp
 	g++ -O3 -Wall jaccardBruteForce.cpp -o jaccardBruteForce
@@ -9,11 +9,14 @@ jaccardMinHash: jaccardMinHash.cpp
 jaccardLSH: jaccardLSH.cpp
 	g++ -O3 -Wall jaccardLSH.cpp -o jaccardLSH
 
-generateDocuments: generateDocuments.cpp
-	g++ -O3 -Wall generateDocuments.cpp -o generateDocuments
+exp1_genRandPerm: exp1_genRandPerm.cpp
+	g++ -O3 -Wall exp1_genRandPerm.cpp -o exp1_genRandPerm
+
+exp2_genRandShingles: exp2_genRandShingles.cpp
+	g++ -O3 -Wall exp2_genRandShingles.cpp -o exp2_genRandShingles
 
 clean:
-	rm -f jaccardBruteForce jaccardMinHash jaccardLSH generateDocuments
+	rm -f jaccardBruteForce jaccardMinHash jaccardLSH exp1_genRandPerm exp2_genRandShingles
 
 distclean: clean
 	rm -f *.o *.txt

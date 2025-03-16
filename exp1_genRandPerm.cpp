@@ -48,17 +48,15 @@ vector<string> permutabasicText(const vector<string>& frases,
 }
 
 // Función para generar documentos .txt
-void generaDocumentos(const vector<string>& permutaciones,
-                      const string& baseFilename) {
+void generaDocumentos(const vector<string>& permutaciones) {
   for (int i = 0; i < permutaciones.size(); ++i) {
     // Crea un nombre de archivo único para cada permutación
-    string filename =
-        baseFilename + "_Perm_" + to_string(i + 1) + ".txt";
+    string filename = "docExp1_" + to_string(i + 1) + ".txt";
 
     // Abre el archivo en modo de escritura
     ofstream file(filename);
     if (!file.is_open()) {
-      cerr << "Error: No se pudo crear el archivo " << filename << endl;
+      cerr << "Error: Could not create file:" << filename << endl;
       continue;
     }
 
@@ -66,7 +64,7 @@ void generaDocumentos(const vector<string>& permutaciones,
     file << permutaciones[i];
     file.close();
 
-    cout << "Archivo generado: " << filename << endl;
+    cout << "Generated file: " << filename << endl;
   }
 }
 
@@ -85,7 +83,7 @@ int main(int argc, char* argv[]) {
   // frases posibles.
   ifstream file("basicText.json");
   if (!file.is_open()) {
-    cerr << "Error: No se pudo abrir el archivo JSON." << endl;
+    cerr << "Error: Could not open JSON file." << endl;
     return 1;
   }
   // parse json
@@ -103,7 +101,7 @@ int main(int argc, char* argv[]) {
 
   vector<string> permutaciones = permutabasicText(frases, D);
 
-  generaDocumentos(permutaciones, "doc");
+  generaDocumentos(permutaciones);
 
   return 0;
 }
