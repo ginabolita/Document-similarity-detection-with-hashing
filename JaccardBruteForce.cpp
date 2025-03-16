@@ -144,7 +144,7 @@ double calculateJaccardSimilarity(const unordered_set<string>& set1,
 // Main
 //---------------------------------------------------------------------------
 int main(int argc, char* argv[]) {
-  stopwords = loadStopwords("stopwords-ca.json");
+  stopwords = loadStopwords("stopwords-en.json");
 
   if (argc != 4) {
     cout << "Usage: " << argv[0] << " <file1> <file2> <k>" << endl;
@@ -183,7 +183,7 @@ int main(int argc, char* argv[]) {
   // cout << "Number of unique shingles in document 1: " << shingles1.size() <<
   // endl; cout << "Number of unique shingles in document 2: " <<
   // shingles2.size() << endl;
-  cout << "Jaccard similarity: " << similarity * 100 << endl;
+  cout << "Brute Force Jaccard Similarity : " << similarity * 100 << '%' << endl;
 
   return 0;
 }

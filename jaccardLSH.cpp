@@ -255,7 +255,7 @@ bool LSH(const vector<int> &signature1, const vector<int> &signature2,
 // Main
 //---------------------------------------------------------------------------
 int main(int argc, char *argv[]) {
-  stopwords = loadStopwords("stopwords-ca.json");
+  stopwords = loadStopwords("stopwords-en.json");
 
   if (argc != 5) {
     cout << "Usage: " << argv[0] << " <file1> <file2> <k> <b>" << endl;
@@ -317,7 +317,7 @@ int main(int argc, char *argv[]) {
 
   // Calculate and output similarity
   float similarity = SimilaridadDeJaccard(signature1, signature2);
-  cout << "Jaccard Similarity: " << similarity * 100 << "%" << endl;
+  cout << "LSH Jaccard Similarity : " << similarity * 100 << "%" << endl;
 
   // Additional statistics
   // cout << "Número de k-shingles en texto 1: " << KT1.size() << endl;

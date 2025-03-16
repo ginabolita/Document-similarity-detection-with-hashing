@@ -282,7 +282,7 @@ float SimilaridadDeJaccard(const vector<int> &signature1, const vector<int> &sig
 
 int main(int argc, char *argv[])
 {
-    stopwords = loadStopwords("stopwords-ca.json");
+    stopwords = loadStopwords("stopwords-en.json");
 
     if (argc != 4)
     {
@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
 
     // Calculate and output similarity
     float similarity = SimilaridadDeJaccard(signature1, signature2);
-    cout << "Jaccard Similarity: " << similarity * 100 << "%" << endl;
+    cout << "Min Hash Jaccard Similarity : " << similarity * 100 << "%" << endl;
 
     // Additional statistics
     //cout << "Número de k-shingles en texto 1: " << KT1.size() << endl;

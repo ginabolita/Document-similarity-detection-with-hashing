@@ -1,4 +1,4 @@
-all: jaccardBruteForce jaccardMinHash jaccardLSH genBaseDocuments
+all: jaccardBruteForce jaccardMinHash jaccardLSH generateDocuments
 
 jaccardBruteForce: jaccardBruteForce.cpp
 	g++ -O3 -Wall jaccardBruteForce.cpp -o jaccardBruteForce
@@ -9,11 +9,11 @@ jaccardMinHash: jaccardMinHash.cpp
 jaccardLSH: jaccardLSH.cpp
 	g++ -O3 -Wall jaccardLSH.cpp -o jaccardLSH
 
-genBaseDocuments: genBaseDocuments.cpp
-	g++ -O3 -Wall genBaseDocuments.cpp -o genBaseDocuments
+generateDocuments: generateDocuments.cpp
+	g++ -O3 -Wall generateDocuments.cpp -o generateDocuments
 
 clean:
-	rm -f jaccardBruteForce  jaccardMinHash jaccardLSH genBaseDocuments
+	rm -f jaccardBruteForce jaccardMinHash jaccardLSH generateDocuments
 
 distclean: clean
 	rm -f *.o *.txt
