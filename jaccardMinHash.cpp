@@ -46,7 +46,7 @@ unordered_set<string> loadStopwords(const string &filename)
 
     for (const auto &word : j)
     {
-        stopwords.insert(word);
+        stopwords.insert(word.get<string>());
     }
 
     return stopwords;

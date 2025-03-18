@@ -31,8 +31,8 @@ unordered_set<string> loadStopwords(const string& filename) {
   json j;
   file >> j;  // Parse JSON
 
-  for (const auto& word : j) {
-    stopwords.insert(word);
+  for (const auto& word : j) {   
+    stopwords.insert(word.get<string>()); // tenia error de tipus en el insert 
   }
 
   return stopwords;

@@ -41,7 +41,7 @@ def generate_texts_with_target_similarity(target_similarity: float, k: int, tole
         Tuple of (text1, text2, actual_similarity)
     """
     # Generate a base text
-    base_words = 500  # Generate more words to have enough shingles
+    base_words = 5000  # Generate more words to have enough shingles
     text1 = generate_random_text(base_words)
     words1 = text1.split()
     shingles1 = get_word_shingles(text1, k)
@@ -192,12 +192,7 @@ def main():
     print(f"\nText 1 saved to: {args.output1}")
     print(f"Text 2 saved to: {args.output2}")
     print(f"Word shingle size used: {args.shingle_size}")
-    
-    # Print instruction to verify with C++ program
-    print("\nNotes for using with your C++ program:")
-    print("1. Your C++ program uses character-level shingles by default")
-    print("2. To use word-level shingles, you would need to modify your C++ code")
-    print("3. Different shingle types will produce different similarity values")
+    print(f"Tolerance: {args.tolerance}")
 
 if __name__ == "__main__":
     main()
