@@ -4,7 +4,8 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
-#include <nlohmann/json.hpp>
+#include "deps/nlohmann/json.hpp"
+#include "deps/xxhash/xxhash.h"
 #include <queue>
 #include <random>
 #include <sstream>
@@ -17,9 +18,6 @@
 #include <algorithm>
 #include <iomanip>
 #include <functional>
-
-// Third-party hash libraries
-#include <xxhash.h> // You'll need to install this library
 
 #define SIMILARITY_THRESHOLD 0.01f // Threshold for considering documents similar
 

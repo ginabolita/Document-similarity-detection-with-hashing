@@ -2,7 +2,7 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
-#include <nlohmann/json.hpp>  // Incluye la biblioteca nlohmann/json
+#include "deps/nlohmann/json.hpp"  // Incluye la biblioteca nlohmann/json
 #include <random>
 #include <sstream>
 #include <string>

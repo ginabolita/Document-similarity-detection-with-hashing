@@ -10,7 +10,7 @@
 #include <fstream>
 #include <chrono>
 #include <cmath>
-#include <nlohmann/json.hpp> 
+#include "deps/nlohmann/json.hpp" 
 
 
 using namespace std;
