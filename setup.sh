@@ -31,11 +31,6 @@ else
     exit 1
 fi
 
-# Install compiler if needed
-if ! command -v g++-13 >/dev/null 2>&1; then
-    echo "Installing g++-13..."
-    $INSTALL_CMD g++-13
-fi
 
 if [! -d "deps/"]; then
     mkdir -p deps
