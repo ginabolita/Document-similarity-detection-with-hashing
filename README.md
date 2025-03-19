@@ -44,9 +44,22 @@ Además, se generan **documentos virtuales** para poder experimentar la efectivi
    ```bash
    cd Proyecto2
    ```
-3. Compila el código:
+3. Instala g++-13:
+   ```
+    sudo apt update
+    sudo apt install g++-13
+  ``` 
+4. Instalar xxhash:
+  ```
+    git clone https://github.com/Cyan4973/xxHash.git deps/xxhash
+    cd deps/xxhash
+    make
+    cd ../..
+  ```
+5. Instalar nlohmann/json.hpp::
    ```bash
-   make
+    mkdir -p deps/nlohmann
+    wget -O deps/nlohmann/json.hpp https://github.com/nlohmann/json/releases/download/v3.11.2/json.hpp
    ```
 
 ---
