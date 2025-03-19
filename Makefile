@@ -34,6 +34,6 @@ clean:
 	rm -f $(EXECUTABLES) deps/xxhash/xxhash.o
 
 distclean: clean
-	rm -f -r deps/* *.txt
+	rm -f -r 
 
 .PHONY: all clean distclean check-dependencies
