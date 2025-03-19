@@ -116,7 +116,7 @@ vector<string> selectQuantity(const unordered_set<string>& shingles,
 void generaDocumentos(const unordered_set<string>& shingles, const string& path) {
   for (int i = 0; i < D; ++i) {
     // Crea un nombre de archivo único para cada permutación
-    string filename =path + "/docExp2_" + to_string(i + 1) + ".txt";
+    string filename = path + "/docExp2_" + to_string(i + 1) + ".txt";
 
     // Abre el archivo en modo de escritura
     ofstream file(filename);
@@ -190,15 +190,16 @@ int main(int argc, char* argv[]) {
   string basicText = jsonData["experimento_2"]["basicText"];
 
   unordered_set<string> shingles = generateShingles(basicText);
-
-  // Crear la carpeta
-  if (!makeDirectory("exp2_directory")) {
-    cerr << "Error: Could not create the directory '" << "exp2_dir" << "'."
-         << endl;
-    return 1;
+  string path = "exp2_directory";
+      // Crear la carpeta
+  if (!makeDirectory(path)) {
+    cerr << "Warning: The directory '" << path
+         << "' exists or could not be created" << endl;
+  } else {
+    cout << "Folder created" << endl;
   }
 
-  generaDocumentos(shingles, "exp2_dir");
+  generaDocumentos(shingles, path);
 
   return 0;
 }
