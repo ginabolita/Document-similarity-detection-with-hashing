@@ -118,8 +118,9 @@ int main(int argc, char* argv[]) {
   string path = "exp1_directory";
       // Crear la carpeta
   if (!makeDirectory(path)) {
-    cerr << "Error: Could not create the directory '" << path << "'." << endl;
-    return 1;
+    cerr << "Warning: The directory '" << path << "' exists or could not be created" << endl;
+  } else {
+    cout << "Folder created" << endl;
   }
 
   generaDocumentos(permutaciones, path);
