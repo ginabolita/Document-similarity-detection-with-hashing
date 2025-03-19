@@ -34,10 +34,6 @@ clean:
 	rm -f $(EXECUTABLES) deps/xxhash/xxhash.o
 
 distclean: clean
-<<<<<<< HEAD
-	rm -f -r 
-=======
 	rm -f -r  *.txt exp1_directory exp2_directory
->>>>>>> ca3483c67a48c30bf0693f09b57cc3ae07f7f375
 
 .PHONY: all clean distclean check-dependencies
