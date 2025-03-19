@@ -1,189 +1,278 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
-#include "deps/nlohmann/json.hpp"
 #include <set>
 #include <sstream>
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include <filesystem>
+#include <regex>
+#include <iomanip>
+
+#include "deps/nlohmann/json.hpp"
+
 using namespace std;
 using namespace nlohmann;
+namespace fs = filesystem;
+
 typedef unsigned int uint;
 unordered_set<string> stopwords;
 
+class Timer
+{
+private:
+  chrono::high_resolution_clock::time_point startTime;
+  string operationName;
+
+public:
+  Timer(const string &name) : operationName(name)
+  {
+    startTime = chrono::high_resolution_clock::now();
+  }
+
+  ~Timer()
+  {
+    auto endTime = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();
+    cout << "[Performance] " << operationName << ": " << duration << " ms" << endl;
+  }
+};
+
 //---------------------------------------------------------------------------
-// Treating StopWords
-// --------------------------------------------------------------------------
-// Check if a word is a stopword
-bool is_stopword(const string& word) {
+// Load Stopwords
+//---------------------------------------------------------------------------
+
+bool is_stopword(const string &word)
+{
   return stopwords.find(word) != stopwords.end();
 }
-// load stopwords from a file into stopword set
-unordered_set<string> loadStopwords(const string& filename) {
+
+unordered_set<string> loadStopwords(const string &filename)
+{
   unordered_set<string> stopwords;
   ifstream file(filename);
-  if (!file) {
+  if (!file)
+  {
     cerr << "Error opening file: " << filename << endl;
     return stopwords;
   }
 
   json j;
-  file >> j;  // Parse JSON
+  file >> j;
 
-  for (const auto& word : j) {   
-    stopwords.insert(word.get<string>()); // tenia error de tipus en el insert 
+  for (const auto &word : j)
+  {
+    stopwords.insert(word.get<string>());
   }
 
   return stopwords;
 }
+
 //---------------------------------------------------------------------------
-// Treating Format
+// Text Processing
 //---------------------------------------------------------------------------
-string remove_punctuation(string text) {
+
+string remove_punctuation(const string &text)
+{
   string newtext;
-  for (int i = 0; i < text.size(); ++i) {
-    if (text[i] == '.' || text[i] == ',' || text[i] == '!' || text[i] == '?' ||
-        text[i] == ';' || text[i] == ':') {
+  for (char c : text)
+  {
+    if (ispunct(c))
+    {
       newtext += ' ';
-    } else {
-      newtext += text[i];
+    }
+    else
+    {
+      newtext += c;
     }
   }
   return newtext;
 }
-// Quita signos de puntuacion y mayusculas
-string normalize(const string& word) {
+
+string normalize(const string &word)
+{
   string result;
-  result.reserve(word.length());
-  for (char c : word) {
-    if (isalpha(c)) {
+  for (char c : word)
+  {
+    if (isalpha(c))
+    {
       result += tolower(c);
     }
   }
   return result;
 }
 
-// Read content from file
-string readFile(const string& filename) {
+string readFile(const string &filename)
+{
   ifstream file(filename);
-  if (!file.is_open()) {
+  if (!file.is_open())
+  {
     cerr << "Error opening file: " << filename << endl;
     return "";
   }
 
-  string content;
-  string line;
-  while (getline(file, line)) {
+  string content, line;
+  while (getline(file, line))
+  {
     content += line + " ";
   }
 
   return content;
 }
+
 //---------------------------------------------------------------------------
 // Jaccard Brute Force Algorithm
 //---------------------------------------------------------------------------
 
-// Function to generate k-shingles from text
-unordered_set<string> generateShingles(const string& text, uint k) {
+unordered_set<string> generateShingles(const string &text, uint k)
+{
   unordered_set<string> shingles;
   vector<string> words;
   stringstream ss(text);
   string word;
 
-  // Tokenize the text into words
-  while (ss >> word) {
-    // tenim en compte si es una stopword abans de tot
-    if (!is_stopword(normalize(word))) {
-      words.push_back(normalize(word));
+  while (ss >> word)
+  {
+    string norm_word = normalize(word);
+    if (!is_stopword(norm_word))
+    {
+      words.push_back(norm_word);
     }
   }
 
-  // Generate k-word shingles
-  if (words.size() >= k) {
-    for (size_t i = 0; i <= words.size() - k; i++) {
+  if (words.size() >= k)
+  {
+    for (size_t i = 0; i <= words.size() - k; i++)
+    {
       string shingle;
-      for (size_t j = 0; j < k; j++) {
-        if (j > 0) shingle += " ";  // Separate words with a space
+      for (size_t j = 0; j < k; j++)
+      {
+        if (j > 0)
+          shingle += " ";
         shingle += words[i + j];
       }
       shingles.insert(shingle);
     }
   }
 
-  // print shingles
-  /*
-  for (auto shingle : shingles){
-                  cout << shingle << " ";
-  }
-  cout << endl;
-  */
-
   return shingles;
 }
 
-// Calculate Jaccard similarity
-double calculateJaccardSimilarity(const unordered_set<string>& set1,
-                                  const unordered_set<string>& set2) {
-  // Find intersection size
+double calculateJaccardSimilarity(const unordered_set<string> &set1, const unordered_set<string> &set2)
+{
   int intersection = 0;
-  for (const auto& shingle : set1) {
-    if (set2.find(shingle) != set2.end()) {
+  for (const auto &shingle : set1)
+  {
+    if (set2.find(shingle) != set2.end())
+    {
       intersection++;
     }
   }
-
-  // Calculate union size: |A| + |B| - |A ∩ B|
   int unionSize = set1.size() + set2.size() - intersection;
-
-  // Calculate Jaccard similarity: |A ∩ B| / |A ∪ B|
   return unionSize > 0 ? static_cast<double>(intersection) / unionSize : 0.0;
 }
 
 //---------------------------------------------------------------------------
-// Main
+// Extract document number from filename
 //---------------------------------------------------------------------------
-int main(int argc, char* argv[]) {
-  stopwords = loadStopwords("stopwords-en.json");
 
-  if (argc != 4) {
-    cout << "Usage: " << argv[0] << " <file1> <file2> <k>" << endl;
-    cout << "where k is the shingle size" << endl;
+string extract_doc_number(const string &filename)
+{
+  regex pattern(R"(docExp1_(\d+))");
+  smatch match;
+  if (regex_search(filename, match, pattern))
+  {
+    return match[1].str();
+  }
+  return filename; // Return full filename if no match
+}
+
+//---------------------------------------------------------------------------
+// Main - Process all file pairs in a directory
+//---------------------------------------------------------------------------
+int main(int argc, char *argv[])
+{
+  // Start measuring total execution time
+  Timer totalTimer("Total Execution Time");
+
+  if (argc != 3)
+  {
+    cout << "Usage: " << argv[0] << " <directory> <k>" << endl;
     return 1;
   }
 
-  // Get k value from command line
-  int k = stoi(argv[3]);
-  if (k <= 0) {
+  string directory = argv[1];
+  int k = stoi(argv[2]);
+  if (k <= 0)
+  {
     cerr << "Error: k must be positive" << endl;
     return 1;
   }
 
-  // Read input files
-  string text1 = readFile(argv[1]);
-  string text2 = readFile(argv[2]);
+  stopwords = loadStopwords("stopwords-en.json");
 
-  text1 = remove_punctuation(text1);
-  text2 = remove_punctuation(text2);
+  vector<string> files;
+  for (const auto &entry : fs::directory_iterator(directory))
+  {
+    if (entry.path().extension() == ".txt")
+    {
+      files.push_back(entry.path().string());
+    }
+  }
 
-  if (text1.empty() || text2.empty()) {
-    cerr << "Error: One or both input files are empty or could not be read."
-         << endl;
+  ofstream output_file("results.csv");
+  if (!output_file.is_open())
+  {
+    cerr << "Error opening results.csv" << endl;
     return 1;
   }
 
-  // Generate k-shingles for both documents
-  unordered_set<string> shingles1 = generateShingles(text1, k);
-  unordered_set<string> shingles2 = generateShingles(text2, k);
+  // Write CSV header
+  output_file << "Document1,Document2,Similarity%" << endl;
 
-  // Calculate Jaccard similarity
-  double similarity = calculateJaccardSimilarity(shingles1, shingles2);
+  for (size_t i = 0; i < files.size(); i++)
+  {
+    // Extract document number and ignore files with number "0"
+    string doc1 = extract_doc_number(files[i]);
+    if (doc1 == "0")
+      continue; // Skip document 0
 
-  // Output results
-  // cout << "Number of unique shingles in document 1: " << shingles1.size() <<
-  // endl; cout << "Number of unique shingles in document 2: " <<
-  // shingles2.size() << endl;
-  cout << "Brute Force Jaccard Similarity : " << similarity * 100 << '%' << endl;
+    for (size_t j = i + 1; j < files.size(); j++)
+    {
+      string doc2 = extract_doc_number(files[j]);
+      if (doc2 == "0")
+        continue; // Skip document 0
 
+      string text1 = remove_punctuation(readFile(files[i]));
+      string text2 = remove_punctuation(readFile(files[j]));
+
+      if (text1.empty() || text2.empty())
+        continue;
+
+      double similarity = 0.0;
+      unordered_set<string> shingles1;
+      unordered_set<string> shingles2;
+      {
+        Timer timer("Create Shingles1");
+        shingles1 = generateShingles(text1, k);
+      }
+      {
+        Timer timer("Create Shingles2");
+        shingles2 = generateShingles(text2, k);
+      }
+      {
+        Timer timer("Calculate Jaccard Similarity");
+        similarity = calculateJaccardSimilarity(shingles1, shingles2) * 100;
+      }
+      // Write the result to the CSV file
+      output_file << doc1 << "," << doc2 << "," << fixed << setprecision(2) << similarity << endl;
+    }
+  }
+
+  output_file.close();
+  cout << "Results saved in results.csv" << endl;
+
+  // The Timer object will automatically print the total execution time when it goes out of scope
   return 0;
 }
