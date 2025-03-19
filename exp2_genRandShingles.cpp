@@ -1,19 +1,26 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
-#include "deps/nlohmann/json.hpp"
 #include <random>
 #include <set>
 #include <sstream>
 #include <string>
 #include <unordered_set>
 #include <vector>
+
+#include "deps/nlohmann/json.hpp"
 using namespace std;
 using namespace nlohmann;
 typedef unsigned int uint;
 unordered_set<string> stopwords;
 
 unsigned int k, D;
+
+#ifdef _WIN32
+#include <direct.h>  // Para _mkdir en Windows
+#else
+#include <sys/stat.h>  // Para mkdir en Unix-like (Linux, macOS)
+#endif
 
 //---------------------------------------------------------------------------
 // Treating StopWords
@@ -106,10 +113,10 @@ vector<string> selectQuantity(const unordered_set<string>& shingles,
   return selectedShingles;
 }
 
-void generaDocumentos(const unordered_set<string>& shingles) {
+void generaDocumentos(const unordered_set<string>& shingles, const string& path) {
   for (int i = 0; i < D; ++i) {
     // Crea un nombre de archivo único para cada permutación
-    string filename = "docExp2_" + to_string(i + 1) + ".txt";
+    string filename =path + "/docExp2_" + to_string(i + 1) + ".txt";
 
     // Abre el archivo en modo de escritura
     ofstream file(filename);
@@ -132,6 +139,14 @@ void generaDocumentos(const unordered_set<string>& shingles) {
     file.close();
     cout << "Generated file: " << filename << endl;
   }
+}
+
+bool makeDirectory(const string& path) {
+#ifdef _WIN32
+  return _mkdir(path.c_str()) == 0;
+#else
+  return mkdir(path.c_str(), 0777) == 0;
+#endif
 }
 
 //---------------------------------------------------------------------------
@@ -176,7 +191,14 @@ int main(int argc, char* argv[]) {
 
   unordered_set<string> shingles = generateShingles(basicText);
 
-  generaDocumentos(shingles);
+  // Crear la carpeta
+  if (!makeDirectory("exp2_directory")) {
+    cerr << "Error: Could not create the directory '" << "exp2_dir" << "'."
+         << endl;
+    return 1;
+  }
+
+  generaDocumentos(shingles, "exp2_dir");
 
   return 0;
 }

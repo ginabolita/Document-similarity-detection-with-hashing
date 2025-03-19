@@ -49,13 +49,13 @@ Además, se generan **documentos virtuales** para poder experimentar la efectivi
     sudo apt update
     sudo apt install g++-13
   ``` 
-4. Instalar xxhash:
-  ```
+4.  Instalar xxhash:
+   ```
     git clone https://github.com/Cyan4973/xxHash.git deps/xxhash
     cd deps/xxhash
     make
     cd ../..
-  ```
+  ````
 5. Instalar nlohmann/json.hpp::
    ```bash
     mkdir -p deps/nlohmann

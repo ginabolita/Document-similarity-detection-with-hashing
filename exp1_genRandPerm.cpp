@@ -11,6 +11,12 @@
 using namespace std;
 using json = nlohmann::json;
 
+#ifdef _WIN32
+#include <direct.h>  // Para _mkdir en Windows
+#else
+#include <sys/stat.h>  // Para mkdir en Unix-like (Linux, macOS)
+#endif
+
 // Función para dividir el texto en frases (se puede hacer por parrafos, pero
 // como nos piden 20 documentos, con 5 frasees ya se generan las permutaciones
 // necesarias)
@@ -48,10 +54,10 @@ vector<string> permutabasicText(const vector<string>& frases,
 }
 
 // Función para generar documentos .txt
-void generaDocumentos(const vector<string>& permutaciones) {
+void generaDocumentos(const vector<string>& permutaciones, const string& path) {
   for (int i = 0; i < permutaciones.size(); ++i) {
     // Crea un nombre de archivo único para cada permutación
-    string filename = "docExp1_" + to_string(i + 1) + ".txt";
+    string filename = path + "/docExp1_" + to_string(i + 1) + ".txt";
 
     // Abre el archivo en modo de escritura
     ofstream file(filename);
@@ -66,6 +72,14 @@ void generaDocumentos(const vector<string>& permutaciones) {
 
     cout << "Generated file: " << filename << endl;
   }
+}
+
+bool makeDirectory(const string& path) {
+#ifdef _WIN32
+  return _mkdir(path.c_str()) == 0;
+#else
+  return mkdir(path.c_str(), 0777) == 0;
+#endif
 }
 
 int main(int argc, char* argv[]) {
@@ -101,7 +115,14 @@ int main(int argc, char* argv[]) {
 
   vector<string> permutaciones = permutabasicText(frases, D);
 
-  generaDocumentos(permutaciones);
+  string path = "exp1_directory";
+      // Crear la carpeta
+  if (!makeDirectory(path)) {
+    cerr << "Error: Could not create the directory '" << path << "'." << endl;
+    return 1;
+  }
+
+  generaDocumentos(permutaciones, path);
 
   return 0;
 }
