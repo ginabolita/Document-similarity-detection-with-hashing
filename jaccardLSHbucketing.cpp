@@ -480,6 +480,8 @@ void printUsage(const char *programName)
 
 int main(int argc, char *argv[])
 {
+  // Start global timer for entire execution
+  auto startTime = chrono::high_resolution_clock::now();
   // Load stopwords
   stopwords = loadStopwords("stopwords-en.json");
 
@@ -562,8 +564,8 @@ int main(int argc, char *argv[])
 
   if (corpusMode)
   {
-    cout << "Format: " << endl;
-    cout << "doc1 doc2 estimated_similarity exact_similarity" << endl;
+    cout << "\nFormat: " << endl;
+    cout << "doc1 | doc2 | estimated_similarity | exact_similarity" << endl;
     // Process all files in corpus directory
     {
       Timer timerProcessCorpus("Processing corpus");
@@ -761,6 +763,11 @@ int main(int argc, char *argv[])
     cout << "  - Estimated similarity (MinHash): " << estSimilarity << endl;
     cout << "  - Exact similarity (Jaccard): " << exactSimilarity << endl;
   }
+
+  // Calculate and display total execution time
+  auto endTime = chrono::high_resolution_clock::now();
+  auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime);
+  cout << "time: " << duration.count() << " ms" << endl;
 
   return 0;
 }
