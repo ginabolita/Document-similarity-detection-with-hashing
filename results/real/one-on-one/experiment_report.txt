@@ -15,7 +15,16 @@ Parameter Effects:
   minhash:
     k=5: Average runtime = nan seconds
 
-2. Corpus Mode Results
----------------------
+3. Observations and Recommendations
+---------------------------------
 
-Method Performance Comparison:
+Observations:
+  - [Add your observations based on the results]
+
+Recommendations:
+  - [Add your recommendations based on the results]
+
+4. Conclusion
+-------------
+
+  - [Add your conclusion based on the experimental results]

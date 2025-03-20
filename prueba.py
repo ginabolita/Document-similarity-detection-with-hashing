@@ -469,95 +469,97 @@ def generate_report(one_on_one_results, corpus_results, output_dir):
         f.write("===========================================\n\n")
         
         # One-on-One Experiments
-        f.write("1. One-on-One Comparison Results\n")
-        f.write("-------------------------------\n\n")
-        
-        # Method comparison
-        f.write("Method Performance Comparison:\n")
-        
-        for method, group in one_on_one_results.groupby('method'):
-            avg_runtime = group['runtime'].mean()
-            f.write(f"  {method}: Average runtime = {avg_runtime:.6f} seconds\n")
-        
-        f.write("\n")
-        
-        # Parameter effects
-        f.write("Parameter Effects:\n")
-        
-        for method, group in one_on_one_results.groupby('method'):
-            if method != 'brute_force':
-                f.write(f"  {method}:\n")
+        if one_on_one_results is not None:
+            f.write("1. One-on-One Comparison Results\n")
+            f.write("-------------------------------\n\n")
+            
+            # Method comparison
+            f.write("Method Performance Comparison:\n")
+            
+            for method, group in one_on_one_results.groupby('method'):
+                avg_runtime = group['runtime'].mean()
+                f.write(f"  {method}: Average runtime = {avg_runtime:.6f} seconds\n")
+            
+            f.write("\n")
+            
+            # Parameter effects
+            f.write("Parameter Effects:\n")
+            
+            for method, group in one_on_one_results.groupby('method'):
+                if method != 'brute_force':
+                    f.write(f"  {method}:\n")
+                    
+                    for k, k_group in group.groupby('k'):
+                        avg_runtime = k_group['runtime'].mean()
+                        f.write(f"    k={k}: Average runtime = {avg_runtime:.6f} seconds\n")
+                    
+                    f.write("\n")
+            
+            # Accuracy comparison
+            if 'brute_force' in one_on_one_results['method'].unique():
+                f.write("Accuracy Comparison (vs. Brute Force):\n")
                 
-                for k, k_group in group.groupby('k'):
-                    avg_runtime = k_group['runtime'].mean()
-                    f.write(f"    k={k}: Average runtime = {avg_runtime:.6f} seconds\n")
+                # Get brute force similarities as ground truth
+                brute_force_df = one_on_one_results[one_on_one_results['method'] == 'brute_force']
+                brute_force_similarities = {}
+                
+                for _, row in brute_force_df.iterrows():
+                    pair_key = (row['doc1'], row['doc2'])
+                    brute_force_similarities[pair_key] = row['similarity']
+                
+                # Calculate error for other methods
+                for method in one_on_one_results['method'].unique():
+                    if method != 'brute_force':
+                        method_df = one_on_one_results[one_on_one_results['method'] == method]
+                        
+                        error_sum = 0
+                        count = 0
+                        
+                        for _, row in method_df.iterrows():
+                            pair_key = (row['doc1'], row['doc2'])
+                            if pair_key in brute_force_similarities:
+                                error = abs(row['similarity'] - brute_force_similarities[pair_key])
+                                error_sum += error
+                                count += 1
+                        
+                        if count > 0:
+                            avg_error = error_sum / count
+                            f.write(f"  {method}: Average absolute error = {avg_error:.6f}\n")
                 
                 f.write("\n")
         
-        # Accuracy comparison
-        if 'brute_force' in one_on_one_results['method'].unique():
-            f.write("Accuracy Comparison (vs. Brute Force):\n")
-            
-            # Get brute force similarities as ground truth
-            brute_force_df = one_on_one_results[one_on_one_results['method'] == 'brute_force']
-            brute_force_similarities = {}
-            
-            for _, row in brute_force_df.iterrows():
-                pair_key = (row['doc1'], row['doc2'])
-                brute_force_similarities[pair_key] = row['similarity']
-            
-            # Calculate error for other methods
-            for method in one_on_one_results['method'].unique():
-                if method != 'brute_force':
-                    method_df = one_on_one_results[one_on_one_results['method'] == method]
-                    
-                    error_sum = 0
-                    count = 0
-                    
-                    for _, row in method_df.iterrows():
-                        pair_key = (row['doc1'], row['doc2'])
-                        if pair_key in brute_force_similarities:
-                            error = abs(row['similarity'] - brute_force_similarities[pair_key])
-                            error_sum += error
-                            count += 1
-                    
-                    if count > 0:
-                        avg_error = error_sum / count
-                        f.write(f"  {method}: Average absolute error = {avg_error:.6f}\n")
-            
-            f.write("\n")
-        
         # Corpus Experiments
-        f.write("2. Corpus Mode Results\n")
-        f.write("---------------------\n\n")
-        
-        # Method comparison
-        f.write("Method Performance Comparison:\n")
-        
-        for method, group in corpus_results.groupby('method'):
-            avg_build_time = group['index_build_time'].mean()
-            avg_query_time = group['query_time'].mean()
-            f.write(f"  {method}:\n")
-            f.write(f"    Average index build time = {avg_build_time:.6f} seconds\n")
-            f.write(f"    Average query time = {avg_query_time:.6f} seconds\n")
-        
-        f.write("\n")
-        
-        # Parameter effects
-        f.write("Parameter Effects:\n")
-        
-        for method, group in corpus_results.groupby('method'):
-            f.write(f"  {method}:\n")
+        if corpus_results is not None:
+            f.write("2. Corpus Mode Results\n")
+            f.write("---------------------\n\n")
             
-            for k, k_group in group.groupby('k'):
-                avg_build_time = k_group['index_build_time'].mean()
-                f.write(f"    k={k}: Average build time = {avg_build_time:.6f} seconds\n")
+            # Method comparison
+            f.write("Method Performance Comparison:\n")
             
-            for t, t_group in group.groupby('t'):
-                avg_query_time = t_group['query_time'].mean()
-                f.write(f"    t={t}: Average query time = {avg_query_time:.6f} seconds\n")
+            for method, group in corpus_results.groupby('method'):
+                avg_build_time = group['index_build_time'].mean()
+                avg_query_time = group['query_time'].mean()
+                f.write(f"  {method}:\n")
+                f.write(f"    Average index build time = {avg_build_time:.6f} seconds\n")
+                f.write(f"    Average query time = {avg_query_time:.6f} seconds\n")
             
             f.write("\n")
+            
+            # Parameter effects
+            f.write("Parameter Effects:\n")
+            
+            for method, group in corpus_results.groupby('method'):
+                f.write(f"  {method}:\n")
+                
+                for k, k_group in group.groupby('k'):
+                    avg_build_time = k_group['index_build_time'].mean()
+                    f.write(f"    k={k}: Average build time = {avg_build_time:.6f} seconds\n")
+                
+                for t, t_group in group.groupby('t'):
+                    avg_query_time = t_group['query_time'].mean()
+                    f.write(f"    t={t}: Average query time = {avg_query_time:.6f} seconds\n")
+                
+                f.write("\n")
         
         # Observations and Recommendations
         f.write("3. Observations and Recommendations\n")
@@ -630,23 +632,21 @@ def main():
     output_dir = os.path.join('results', args.mode, args.experiment)
     os.makedirs(output_dir, exist_ok=True)
     
+    one_on_one_results = None
+    corpus_results = None
+
     if args.experiment == 'one-on-one':
         logging.info("Running one-on-one experiments...")
-        results = run_one_on_one_experiment(executables, dataset_dir, output_dir, args.k_values, args.t_values)
-        visualize_one_on_one_results(results, output_dir)
-        corpus_results = None
+        one_on_one_results = run_one_on_one_experiment(executables, dataset_dir, output_dir, args.k_values, args.t_values)
+        visualize_one_on_one_results(one_on_one_results, output_dir)
     else:  # corpus mode
         logging.info("Running corpus experiments...")
-        results = run_corpus_experiment(corpus_executables, dataset_dir, output_dir, args.k_values, args.t_values, args.threshold_values)
-        visualize_corpus_results(results, output_dir)
-        one_on_one_results = None
-    
-    # Generate report
-    if args.experiment == 'one-on-one':
-        generate_report(results, None, output_dir)
-    else:
-        generate_report(None, results, output_dir)
-    
+        corpus_results = run_corpus_experiment(corpus_executables, dataset_dir, output_dir, args.k_values, args.t_values, args.threshold_values)
+        visualize_corpus_results(corpus_results, output_dir)
+
+    # Generate report using the appropriate variables
+    generate_report(one_on_one_results, corpus_results, output_dir)
+        
     logging.info("Experiments completed successfully.")
 
 if __name__ == "__main__":
