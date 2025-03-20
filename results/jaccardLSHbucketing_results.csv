@@ -1,0 +1,1145 @@
+6,50,"Processing files in directory: exp1_directory
+Found 190 candidate pairs
+
+Found 190 similar document pairs:
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_10.txt
+  - Estimated similarity: 0.6
+  - Exact similarity: 0.520097
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_11.txt
+  - Estimated similarity: 0.51
+  - Exact similarity: 0.498199
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_12.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.52754
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_13.txt
+  - Estimated similarity: 0.58
+  - Exact similarity: 0.520097
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_14.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.542645
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_15.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.507246
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_16.txt
+  - Estimated similarity: 0.52
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_17.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.520097
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_18.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.507246
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_19.txt
+  - Estimated similarity: 0.47
+  - Exact similarity: 0.498199
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_2.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.510896
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_20.txt
+  - Estimated similarity: 0.52
+  - Exact similarity: 0.509069
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_3.txt
+  - Estimated similarity: 0.52
+  - Exact similarity: 0.507246
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_4.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.514563
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_5.txt
+  - Estimated similarity: 0.52
+  - Exact similarity: 0.525672
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.505428
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_1.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.56
+  - Exact similarity: 0.507246
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_11.txt
+  - Estimated similarity: 0.61
+  - Exact similarity: 0.518248
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_12.txt
+  - Estimated similarity: 0.58
+  - Exact similarity: 0.510896
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_13.txt
+  - Estimated similarity: 0.6
+  - Exact similarity: 0.5
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_14.txt
+  - Estimated similarity: 0.61
+  - Exact similarity: 0.520097
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_15.txt
+  - Estimated similarity: 0.51
+  - Exact similarity: 0.505428
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_16.txt
+  - Estimated similarity: 0.6
+  - Exact similarity: 0.501805
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_17.txt
+  - Estimated similarity: 0.62
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_18.txt
+  - Estimated similarity: 0.6
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_19.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.531288
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_2.txt
+  - Estimated similarity: 0.65
+  - Exact similarity: 0.552239
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_20.txt
+  - Estimated similarity: 0.51
+  - Exact similarity: 0.507246
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_3.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_4.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_5.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.510896
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.56
+  - Exact similarity: 0.510896
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.61
+  - Exact similarity: 0.521951
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.58
+  - Exact similarity: 0.510896
+
+Similar documents:
+  - exp1_directory/docExp1_10.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_12.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.52754
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_13.txt
+  - Estimated similarity: 0.56
+  - Exact similarity: 0.514563
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_14.txt
+  - Estimated similarity: 0.59
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_15.txt
+  - Estimated similarity: 0.49
+  - Exact similarity: 0.509069
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_16.txt
+  - Estimated similarity: 0.59
+  - Exact similarity: 0.5
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_17.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.510896
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_18.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_19.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.518248
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_2.txt
+  - Estimated similarity: 0.56
+  - Exact similarity: 0.507246
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_20.txt
+  - Estimated similarity: 0.47
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_3.txt
+  - Estimated similarity: 0.48
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_4.txt
+  - Estimated similarity: 0.51
+  - Exact similarity: 0.5
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_5.txt
+  - Estimated similarity: 0.49
+  - Exact similarity: 0.5
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.510896
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_11.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.56
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_13.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.516403
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_14.txt
+  - Estimated similarity: 0.6
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_15.txt
+  - Estimated similarity: 0.52
+  - Exact similarity: 0.498199
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_16.txt
+  - Estimated similarity: 0.59
+  - Exact similarity: 0.52381
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_17.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.518248
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_18.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.501805
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_19.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.501805
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_2.txt
+  - Estimated similarity: 0.6
+  - Exact similarity: 0.5
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_20.txt
+  - Estimated similarity: 0.52
+  - Exact similarity: 0.518248
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_3.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.507246
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_4.txt
+  - Estimated similarity: 0.48
+  - Exact similarity: 0.510896
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_5.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.518248
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.5
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_12.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.56
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_13.txt
+  - exp1_directory/docExp1_14.txt
+  - Estimated similarity: 0.6
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_13.txt
+  - exp1_directory/docExp1_15.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.507246
+
+Similar documents:
+  - exp1_directory/docExp1_13.txt
+  - exp1_directory/docExp1_16.txt
+  - Estimated similarity: 0.6
+  - Exact similarity: 0.52381
+
+Similar documents:
+  - exp1_directory/docExp1_13.txt
+  - exp1_directory/docExp1_17.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.529412
+
+Similar documents:
+  - exp1_directory/docExp1_13.txt
+  - exp1_directory/docExp1_18.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.5
+
+Similar documents:
+  - exp1_directory/docExp1_13.txt
+  - exp1_directory/docExp1_19.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.507246
+
+Similar documents:
+  - exp1_directory/docExp1_13.txt
+  - exp1_directory/docExp1_2.txt
+  - Estimated similarity: 0.58
+  - Exact similarity: 0.520097
+
+Similar documents:
+  - exp1_directory/docExp1_13.txt
+  - exp1_directory/docExp1_20.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.514563
+
+Similar documents:
+  - exp1_directory/docExp1_13.txt
+  - exp1_directory/docExp1_3.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.498199
+
+Similar documents:
+  - exp1_directory/docExp1_13.txt
+  - exp1_directory/docExp1_4.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.514563
+
+Similar documents:
+  - exp1_directory/docExp1_13.txt
+  - exp1_directory/docExp1_5.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_13.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.58
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_13.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.62
+  - Exact similarity: 0.505428
+
+Similar documents:
+  - exp1_directory/docExp1_13.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.56
+  - Exact similarity: 0.514563
+
+Similar documents:
+  - exp1_directory/docExp1_13.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_14.txt
+  - exp1_directory/docExp1_15.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.514563
+
+Similar documents:
+  - exp1_directory/docExp1_14.txt
+  - exp1_directory/docExp1_16.txt
+  - Estimated similarity: 0.61
+  - Exact similarity: 0.507246
+
+Similar documents:
+  - exp1_directory/docExp1_14.txt
+  - exp1_directory/docExp1_17.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.5
+
+Similar documents:
+  - exp1_directory/docExp1_14.txt
+  - exp1_directory/docExp1_18.txt
+  - Estimated similarity: 0.59
+  - Exact similarity: 0.509069
+
+Similar documents:
+  - exp1_directory/docExp1_14.txt
+  - exp1_directory/docExp1_19.txt
+  - Estimated similarity: 0.51
+  - Exact similarity: 0.518248
+
+Similar documents:
+  - exp1_directory/docExp1_14.txt
+  - exp1_directory/docExp1_2.txt
+  - Estimated similarity: 0.6
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_14.txt
+  - exp1_directory/docExp1_20.txt
+  - Estimated similarity: 0.51
+  - Exact similarity: 0.509069
+
+Similar documents:
+  - exp1_directory/docExp1_14.txt
+  - exp1_directory/docExp1_3.txt
+  - Estimated similarity: 0.52
+  - Exact similarity: 0.505428
+
+Similar documents:
+  - exp1_directory/docExp1_14.txt
+  - exp1_directory/docExp1_4.txt
+  - Estimated similarity: 0.56
+  - Exact similarity: 0.514563
+
+Similar documents:
+  - exp1_directory/docExp1_14.txt
+  - exp1_directory/docExp1_5.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.5
+
+Similar documents:
+  - exp1_directory/docExp1_14.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.58
+  - Exact similarity: 0.501805
+
+Similar documents:
+  - exp1_directory/docExp1_14.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.510896
+
+Similar documents:
+  - exp1_directory/docExp1_14.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_14.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.56
+  - Exact similarity: 0.5
+
+Similar documents:
+  - exp1_directory/docExp1_15.txt
+  - exp1_directory/docExp1_16.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_15.txt
+  - exp1_directory/docExp1_17.txt
+  - Estimated similarity: 0.52
+  - Exact similarity: 0.509069
+
+Similar documents:
+  - exp1_directory/docExp1_15.txt
+  - exp1_directory/docExp1_18.txt
+  - Estimated similarity: 0.52
+  - Exact similarity: 0.525672
+
+Similar documents:
+  - exp1_directory/docExp1_15.txt
+  - exp1_directory/docExp1_19.txt
+  - Estimated similarity: 0.45
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_15.txt
+  - exp1_directory/docExp1_2.txt
+  - Estimated similarity: 0.51
+  - Exact similarity: 0.496403
+
+Similar documents:
+  - exp1_directory/docExp1_15.txt
+  - exp1_directory/docExp1_20.txt
+  - Estimated similarity: 0.48
+  - Exact similarity: 0.498199
+
+Similar documents:
+  - exp1_directory/docExp1_15.txt
+  - exp1_directory/docExp1_3.txt
+  - Estimated similarity: 0.43
+  - Exact similarity: 0.525672
+
+Similar documents:
+  - exp1_directory/docExp1_15.txt
+  - exp1_directory/docExp1_4.txt
+  - Estimated similarity: 0.49
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_15.txt
+  - exp1_directory/docExp1_5.txt
+  - Estimated similarity: 0.47
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_15.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.509069
+
+Similar documents:
+  - exp1_directory/docExp1_15.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.48
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_15.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.521951
+
+Similar documents:
+  - exp1_directory/docExp1_15.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.51
+  - Exact similarity: 0.525672
+
+Similar documents:
+  - exp1_directory/docExp1_16.txt
+  - exp1_directory/docExp1_17.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.510896
+
+Similar documents:
+  - exp1_directory/docExp1_16.txt
+  - exp1_directory/docExp1_18.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.521951
+
+Similar documents:
+  - exp1_directory/docExp1_16.txt
+  - exp1_directory/docExp1_19.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_16.txt
+  - exp1_directory/docExp1_2.txt
+  - Estimated similarity: 0.58
+  - Exact similarity: 0.501805
+
+Similar documents:
+  - exp1_directory/docExp1_16.txt
+  - exp1_directory/docExp1_20.txt
+  - Estimated similarity: 0.51
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_16.txt
+  - exp1_directory/docExp1_3.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.507246
+
+Similar documents:
+  - exp1_directory/docExp1_16.txt
+  - exp1_directory/docExp1_4.txt
+  - Estimated similarity: 0.58
+  - Exact similarity: 0.520097
+
+Similar documents:
+  - exp1_directory/docExp1_16.txt
+  - exp1_directory/docExp1_5.txt
+  - Estimated similarity: 0.52
+  - Exact similarity: 0.514563
+
+Similar documents:
+  - exp1_directory/docExp1_16.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.56
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_16.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.59
+  - Exact similarity: 0.520097
+
+Similar documents:
+  - exp1_directory/docExp1_16.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.501805
+
+Similar documents:
+  - exp1_directory/docExp1_16.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.505428
+
+Similar documents:
+  - exp1_directory/docExp1_17.txt
+  - exp1_directory/docExp1_18.txt
+  - Estimated similarity: 0.61
+  - Exact similarity: 0.538841
+
+Similar documents:
+  - exp1_directory/docExp1_17.txt
+  - exp1_directory/docExp1_19.txt
+  - Estimated similarity: 0.45
+  - Exact similarity: 0.510896
+
+Similar documents:
+  - exp1_directory/docExp1_17.txt
+  - exp1_directory/docExp1_2.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.509069
+
+Similar documents:
+  - exp1_directory/docExp1_17.txt
+  - exp1_directory/docExp1_20.txt
+  - Estimated similarity: 0.45
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_17.txt
+  - exp1_directory/docExp1_3.txt
+  - Estimated similarity: 0.48
+  - Exact similarity: 0.5
+
+Similar documents:
+  - exp1_directory/docExp1_17.txt
+  - exp1_directory/docExp1_4.txt
+  - Estimated similarity: 0.49
+  - Exact similarity: 0.501805
+
+Similar documents:
+  - exp1_directory/docExp1_17.txt
+  - exp1_directory/docExp1_5.txt
+  - Estimated similarity: 0.51
+  - Exact similarity: 0.514563
+
+Similar documents:
+  - exp1_directory/docExp1_17.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.514563
+
+Similar documents:
+  - exp1_directory/docExp1_17.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_17.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.510896
+
+Similar documents:
+  - exp1_directory/docExp1_17.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.498199
+
+Similar documents:
+  - exp1_directory/docExp1_18.txt
+  - exp1_directory/docExp1_19.txt
+  - Estimated similarity: 0.48
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_18.txt
+  - exp1_directory/docExp1_2.txt
+  - Estimated similarity: 0.61
+  - Exact similarity: 0.516403
+
+Similar documents:
+  - exp1_directory/docExp1_18.txt
+  - exp1_directory/docExp1_20.txt
+  - Estimated similarity: 0.51
+  - Exact similarity: 0.509069
+
+Similar documents:
+  - exp1_directory/docExp1_18.txt
+  - exp1_directory/docExp1_3.txt
+  - Estimated similarity: 0.47
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_18.txt
+  - exp1_directory/docExp1_4.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.510896
+
+Similar documents:
+  - exp1_directory/docExp1_18.txt
+  - exp1_directory/docExp1_5.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.501805
+
+Similar documents:
+  - exp1_directory/docExp1_18.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.505428
+
+Similar documents:
+  - exp1_directory/docExp1_18.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.516403
+
+Similar documents:
+  - exp1_directory/docExp1_18.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.5
+
+Similar documents:
+  - exp1_directory/docExp1_18.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.516403
+
+Similar documents:
+  - exp1_directory/docExp1_19.txt
+  - exp1_directory/docExp1_2.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_19.txt
+  - exp1_directory/docExp1_20.txt
+  - Estimated similarity: 0.45
+  - Exact similarity: 0.507246
+
+Similar documents:
+  - exp1_directory/docExp1_19.txt
+  - exp1_directory/docExp1_3.txt
+  - Estimated similarity: 0.42
+  - Exact similarity: 0.514563
+
+Similar documents:
+  - exp1_directory/docExp1_19.txt
+  - exp1_directory/docExp1_4.txt
+  - Estimated similarity: 0.48
+  - Exact similarity: 0.505428
+
+Similar documents:
+  - exp1_directory/docExp1_19.txt
+  - exp1_directory/docExp1_5.txt
+  - Estimated similarity: 0.47
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_19.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.47
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_19.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.46
+  - Exact similarity: 0.505428
+
+Similar documents:
+  - exp1_directory/docExp1_19.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.46
+  - Exact similarity: 0.496403
+
+Similar documents:
+  - exp1_directory/docExp1_19.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.505428
+
+Similar documents:
+  - exp1_directory/docExp1_2.txt
+  - exp1_directory/docExp1_20.txt
+  - Estimated similarity: 0.51
+  - Exact similarity: 0.505428
+
+Similar documents:
+  - exp1_directory/docExp1_2.txt
+  - exp1_directory/docExp1_3.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.501805
+
+Similar documents:
+  - exp1_directory/docExp1_2.txt
+  - exp1_directory/docExp1_4.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.554172
+
+Similar documents:
+  - exp1_directory/docExp1_2.txt
+  - exp1_directory/docExp1_5.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.507246
+
+Similar documents:
+  - exp1_directory/docExp1_2.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.514563
+
+Similar documents:
+  - exp1_directory/docExp1_2.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.56
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_2.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.510896
+
+Similar documents:
+  - exp1_directory/docExp1_2.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.56
+  - Exact similarity: 0.521951
+
+Similar documents:
+  - exp1_directory/docExp1_20.txt
+  - exp1_directory/docExp1_3.txt
+  - Estimated similarity: 0.45
+  - Exact similarity: 0.501805
+
+Similar documents:
+  - exp1_directory/docExp1_20.txt
+  - exp1_directory/docExp1_4.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.525672
+
+Similar documents:
+  - exp1_directory/docExp1_20.txt
+  - exp1_directory/docExp1_5.txt
+  - Estimated similarity: 0.47
+  - Exact similarity: 0.498199
+
+Similar documents:
+  - exp1_directory/docExp1_20.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.51
+  - Exact similarity: 0.514563
+
+Similar documents:
+  - exp1_directory/docExp1_20.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.55
+  - Exact similarity: 0.509069
+
+Similar documents:
+  - exp1_directory/docExp1_20.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.516403
+
+Similar documents:
+  - exp1_directory/docExp1_20.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.51
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_3.txt
+  - exp1_directory/docExp1_4.txt
+  - Estimated similarity: 0.42
+  - Exact similarity: 0.505428
+
+Similar documents:
+  - exp1_directory/docExp1_3.txt
+  - exp1_directory/docExp1_5.txt
+  - Estimated similarity: 0.48
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_3.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.49
+  - Exact similarity: 0.501805
+
+Similar documents:
+  - exp1_directory/docExp1_3.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_3.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.52754
+
+Similar documents:
+  - exp1_directory/docExp1_3.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_4.txt
+  - exp1_directory/docExp1_5.txt
+  - Estimated similarity: 0.49
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_4.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.49
+  - Exact similarity: 0.503614
+
+Similar documents:
+  - exp1_directory/docExp1_4.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.53
+  - Exact similarity: 0.505428
+
+Similar documents:
+  - exp1_directory/docExp1_4.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_4.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.544554
+
+Similar documents:
+  - exp1_directory/docExp1_5.txt
+  - exp1_directory/docExp1_6.txt
+  - Estimated similarity: 0.52
+  - Exact similarity: 0.509069
+
+Similar documents:
+  - exp1_directory/docExp1_5.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.501805
+
+Similar documents:
+  - exp1_directory/docExp1_5.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.505428
+
+Similar documents:
+  - exp1_directory/docExp1_5.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.5
+  - Exact similarity: 0.505428
+
+Similar documents:
+  - exp1_directory/docExp1_6.txt
+  - exp1_directory/docExp1_7.txt
+  - Estimated similarity: 0.6
+  - Exact similarity: 0.512727
+
+Similar documents:
+  - exp1_directory/docExp1_6.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.5
+
+Similar documents:
+  - exp1_directory/docExp1_6.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.509069
+
+Similar documents:
+  - exp1_directory/docExp1_7.txt
+  - exp1_directory/docExp1_8.txt
+  - Estimated similarity: 0.54
+  - Exact similarity: 0.507246
+
+Similar documents:
+  - exp1_directory/docExp1_7.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.56
+  - Exact similarity: 0.501805
+
+Similar documents:
+  - exp1_directory/docExp1_8.txt
+  - exp1_directory/docExp1_9.txt
+  - Estimated similarity: 0.57
+  - Exact similarity: 0.510896
+
+"
