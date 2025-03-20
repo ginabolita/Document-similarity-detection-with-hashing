@@ -1,7 +1,0 @@
-Document Similarity Methods Evaluation Report
-===========================================
-
-1. One-on-One Comparison Results
--------------------------------
-
-Method Performance Comparison:
