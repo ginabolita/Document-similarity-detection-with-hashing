@@ -69,7 +69,7 @@ public:
   {
     auto endTime = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();
-    //cout << "[Performance] " << operationName << ": " << duration << " ms" << endl;
+    // cout << "[Performance] " << operationName << ": " << duration << " ms" << endl;
   }
 };
 
@@ -330,7 +330,7 @@ void initializeLSHBuckets(int numBands)
 {
   bandBucketMap.clear();
   bandBucketMap.resize(numBands);
-  //cout << "Initialized " << numBands << " LSH bands" << endl;
+  // cout << "Initialized " << numBands << " LSH bands" << endl;
 }
 
 // Add a document to LSH buckets
@@ -338,16 +338,17 @@ void addToLSHBuckets(const vector<int> &signature, int docIndex, int numBands)
 {
   // Calculate band size (rows per band)
   int rowsPerBand = signature.size() / numBands;
-  
-  if (rowsPerBand == 0) {
-    rowsPerBand = 1;  // Ensure at least one row per band
+
+  if (rowsPerBand == 0)
+  {
+    rowsPerBand = 1; // Ensure at least one row per band
   }
 
-  //cout << "Adding document " << docIndex << " to LSH buckets (signature size: " 
-   //    << signature.size() << ", rows per band: " << rowsPerBand << ")" << endl;
+  // cout << "Adding document " << docIndex << " to LSH buckets (signature size: "
+  //     << signature.size() << ", rows per band: " << rowsPerBand << ")" << endl;
 
   int bucketsAdded = 0;
-  
+
   // For each band
   for (int b = 0; b < numBands; b++)
   {
@@ -365,47 +366,47 @@ void addToLSHBuckets(const vector<int> &signature, int docIndex, int numBands)
     bandBucketMap[b][bandHash].docIndices.push_back(docIndex);
     bucketsAdded++;
   }
-  
-  //cout << "Document " << docIndex << " added to " << bucketsAdded << " buckets" << endl;
+
+  // cout << "Document " << docIndex << " added to " << bucketsAdded << " buckets" << endl;
 }
 
 vector<pair<int, int>> findSimilarDocumentPairs(const vector<Document> &documents, int numBands, float threshold)
 {
-  //cout << "Starting findSimilarDocumentPairs with " << documents.size() 
-   //    << " documents, " << numBands << " bands, threshold " << threshold << endl;
-  
+  // cout << "Starting findSimilarDocumentPairs with " << documents.size()
+  //     << " documents, " << numBands << " bands, threshold " << threshold << endl;
+
   // Debug: Check if buckets contain any documents
   int totalBuckets = 0;
   int nonEmptyBuckets = 0;
   int maxBucketSize = 0;
-  
+
   for (int b = 0; b < numBands; b++)
   {
     totalBuckets += bandBucketMap[b].size();
-    
+
     for (const auto &bucketPair : bandBucketMap[b])
     {
       const Bucket &bucket = bucketPair.second;
-      if (!bucket.docIndices.empty()) {
+      if (!bucket.docIndices.empty())
+      {
         nonEmptyBuckets++;
         maxBucketSize = max(maxBucketSize, static_cast<int>(bucket.docIndices.size()));
       }
     }
   }
-  
-  //cout << "LSH stats: " << totalBuckets << " total buckets, " 
-  //     << nonEmptyBuckets << " non-empty buckets, "
-   //    << "largest bucket has " << maxBucketSize << " documents" << endl;
+
+  // cout << "LSH stats: " << totalBuckets << " total buckets, "
+  //      << nonEmptyBuckets << " non-empty buckets, "
+  //     << "largest bucket has " << maxBucketSize << " documents" << endl;
 
   // Set to store pairs of similar documents (to avoid duplicates)
   set<pair<int, int>> similarPairsSet;
 
-
   // For each band
   for (int b = 0; b < numBands; b++)
   {
-    //cout << "Processing band " << b << " with " << bandBucketMap[b].size() << " buckets" << endl;
-    
+    // cout << "Processing band " << b << " with " << bandBucketMap[b].size() << " buckets" << endl;
+
     // For each bucket in this band
     for (const auto &bucketPair : bandBucketMap[b])
     {
@@ -414,8 +415,8 @@ vector<pair<int, int>> findSimilarDocumentPairs(const vector<Document> &document
       // If bucket has at least 2 documents, they might be similar
       if (bucket.docIndices.size() >= 2)
       {
-        //cout << "Found bucket with " << bucket.docIndices.size() << " documents" << endl;
-        
+        // cout << "Found bucket with " << bucket.docIndices.size() << " documents" << endl;
+
         // Check all pairs in the bucket
         for (size_t i = 0; i < bucket.docIndices.size(); i++)
         {
@@ -431,9 +432,9 @@ vector<pair<int, int>> findSimilarDocumentPairs(const vector<Document> &document
             }
 
             similarPairsSet.insert({doc1, doc2});
-            
+
             // Debug: Output when a pair is added
-            //cout << "Added candidate pair: " << doc1 << " and " << doc2 << endl;
+            // cout << "Added candidate pair: " << doc1 << " and " << doc2 << endl;
           }
         }
       }
@@ -442,19 +443,19 @@ vector<pair<int, int>> findSimilarDocumentPairs(const vector<Document> &document
 
   // Convert set to vector
   vector<pair<int, int>> similarPairs(similarPairsSet.begin(), similarPairsSet.end());
-  
-  cout << "Found " << similarPairs.size() << " candidate pairs" << endl;
+
+  //cout << "Found " << similarPairs.size() << " candidate pairs" << endl;
 
   // Filter pairs based on actual similarity
   vector<pair<int, int>> filteredPairs;
   for (const auto &pair : similarPairs)
   {
-    //cout << "Comparing documents: " << documents[pair.first].filename << " and " << documents[pair.second].filename << endl;
+    // cout << "Comparing documents: " << documents[pair.first].filename << " and " << documents[pair.second].filename << endl;
     float similarity = estimatedJaccardSimilarity(
         documents[pair.first].signature,
         documents[pair.second].signature);
-    
-    //cout << "Estimated Similarity: " << similarity << endl;
+
+    // cout << "Estimated Similarity: " << similarity << endl;
 
     if (similarity >= threshold)
     {
@@ -464,8 +465,6 @@ vector<pair<int, int>> findSimilarDocumentPairs(const vector<Document> &document
 
   return filteredPairs;
 }
-
-
 
 //---------------------------------------------------------------------------
 // Main
@@ -543,16 +542,16 @@ int main(int argc, char *argv[])
   }
 
   // Adjust number of bands based on threshold
-  //cout << "Using " << b << " bands with threshold " << SIMILARITY_THRESHOLD << endl;
+  // cout << "Using " << b << " bands with threshold " << SIMILARITY_THRESHOLD << endl;
 
   // If threshold is very low, suggest using more bands
-  if (SIMILARITY_THRESHOLD < 0.1 && b < 50) {
-    cout << "Warning: For low threshold (" << SIMILARITY_THRESHOLD 
-        << "), consider using more bands (current: " << b << ")" << endl;
+  if (SIMILARITY_THRESHOLD < 0.1 && b < 50)
+  {
+    cout << "Warning: For low threshold (" << SIMILARITY_THRESHOLD
+         << "), consider using more bands (current: " << b << ")" << endl;
   }
 
-
-  //bloque de codigo para que al finalizar se destruya el timer (y mida el tiempo automaticamente)
+  // bloque de codigo para que al finalizar se destruya el timer (y mida el tiempo automaticamente)
   { // Initialize hash functions
     Timer timerInit("Initialize hash functions");
     initializeHashFunctions();
@@ -563,10 +562,12 @@ int main(int argc, char *argv[])
 
   if (corpusMode)
   {
+    cout << "Format: " << endl;
+    cout << "doc1 doc2 estimated_similarity exact_similarity" << endl;
     // Process all files in corpus directory
     {
       Timer timerProcessCorpus("Processing corpus");
-      cout << "Processing files in directory: " << path1 << endl;
+      //cout << "Processing files in directory: " << path1 << endl;
 
       for (const auto &entry : filesystem::directory_iterator(path1))
       {
@@ -583,7 +584,7 @@ int main(int argc, char *argv[])
           doc.signature = computeMinHashSignature(doc.kShingles);
 
           documents.push_back(doc);
-          //cout << "Processed: " << filename << " - " << doc.kShingles.size() << " shingles" << endl;
+          // cout << "Processed: " << filename << " - " << doc.kShingles.size() << " shingles" << endl;
         }
       }
     }
@@ -607,7 +608,7 @@ int main(int argc, char *argv[])
     }
 
     // Report results
-    cout << "\nFound " << similarPairs.size() << " similar document pairs:" << endl;
+    //cout << "\nFound " << similarPairs.size() << " similar document pairs:" << endl;
     for (const auto &pair : similarPairs)
     {
       float estSimilarity = estimatedJaccardSimilarity(
@@ -618,12 +619,32 @@ int main(int argc, char *argv[])
           documents[pair.first].kShingles,
           documents[pair.second].kShingles);
 
+          /*
       cout << "Similar documents:" << endl;
       cout << "  - " << documents[pair.first].filename << endl;
       cout << "  - " << documents[pair.second].filename << endl;
       cout << "  - Estimated similarity: " << estSimilarity << endl;
       cout << "  - Exact similarity: " << exactSimilarity << endl;
       cout << endl;
+        */
+      string d1 = documents[pair.first].filename;
+      string d2 = documents[pair.second].filename;
+
+      if (d1.size() == 29)
+      {
+        d1 = string(1, d1[23]) + string(1, d1[24]);
+      }
+      else
+        d1 = d1[23];
+      if (d2.size() == 29)
+      {
+        d2 = string(1, d2[23]) + string(1, d2[24]);
+      }
+      else
+        d2 = d2[23];
+
+      cout << d1 << "," << d2
+           << "," << estSimilarity << "," << exactSimilarity << endl;
     }
   }
   else if (singleVsCorpusMode)
@@ -640,7 +661,7 @@ int main(int argc, char *argv[])
       tratar(content, queryDoc.kShingles);
       queryDoc.signature = computeMinHashSignature(queryDoc.kShingles);
 
-      //cout << "Processed: " << path1 << " - " << queryDoc.kShingles.size() << " shingles" << endl;
+      // cout << "Processed: " << path1 << " - " << queryDoc.kShingles.size() << " shingles" << endl;
     }
 
     {
@@ -659,7 +680,7 @@ int main(int argc, char *argv[])
           doc.signature = computeMinHashSignature(doc.kShingles);
 
           documents.push_back(doc);
-          //cout << "Processed: " << filename << " - " << doc.kShingles.size() << " shingles" << endl;
+          // cout << "Processed: " << filename << " - " << doc.kShingles.size() << " shingles" << endl;
         }
       }
     }
@@ -685,7 +706,7 @@ int main(int argc, char *argv[])
     }
 
     // Report results
-    cout << "\nFound " << similarities.size() << " similar documents to " << path1 << ":" << endl;
+    //cout << "\nFound " << similarities.size() << " similar documents to " << path1 << ":" << endl;
     for (const auto &pair : similarities)
     {
       float estSimilarity = pair.first;
@@ -723,8 +744,8 @@ int main(int argc, char *argv[])
       doc1.signature = computeMinHashSignature(doc1.kShingles);
       doc2.signature = computeMinHashSignature(doc2.kShingles);
 
-      //cout << "Processed: " << path1 << " - " << doc1.kShingles.size() << " shingles" << endl;
-      //cout << "Processed: " << path2 << " - " << doc2.kShingles.size() << " shingles" << endl;
+      // cout << "Processed: " << path1 << " - " << doc1.kShingles.size() << " shingles" << endl;
+      // cout << "Processed: " << path2 << " - " << doc2.kShingles.size() << " shingles" << endl;
     }
 
     {
