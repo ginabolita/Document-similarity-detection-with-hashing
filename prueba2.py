@@ -25,6 +25,7 @@ def main():
     parser = argparse.ArgumentParser(description='Document Similarity Methods Evaluation')
     parser.add_argument('--k_values', nargs='+', type=int, required=True, help='List of k values to test')
     parser.add_argument('--num_docs', type=int, default=20, help='Number of documents to generate')
+    parser.add_argument('--num_docs2', type=int, default=30, help='Number of documents to generate')
     
     # Parsea los argumentos
     args = parser.parse_args()
@@ -38,7 +39,7 @@ def main():
     # Ejecuta el segundo programa (exp2_genRandShingles) para cada valor de k
     print("Ejecutando exp2_genRandShingles...")
     for k in args.k_values:
-        salida_programa2 = ejecutar_programa("exp2_genRandShingles", k, args.num_docs)
+        salida_programa2 = ejecutar_programa("exp2_genRandShingles", k, args.num_docs2)
         if salida_programa2 is None:
             continue  # Continúa con el siguiente valor de k si hay un error
 
