@@ -1,0 +1,3 @@
+dataset,similar_pairs,index_build_time,query_time,total_runtime,status,method,k,t,threshold
+datasets/real,[],,,,error,lsh_bucketing,5,75,0.1
+datasets/real,[],,,,error,lsh_forest,5,75,0.1

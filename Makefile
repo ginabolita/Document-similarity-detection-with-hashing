@@ -4,15 +4,18 @@ FLAGS = -O3 -Wall -std=c++17
 INCLUDE = -Inlohmann -Ixxhash
 LIBS = deps/xxhash/libxxhash.a
 
+EXECUTABLE_DIR = executables
+
 # Automatically find all .cpp files and generate targets
 SOURCES = $(wildcard *.cpp)
-EXECUTABLES = $(SOURCES:.cpp=)
+EXECUTABLES = $(patsubst %.cpp,$(EXECUTABLE_DIR)/%, $(SOURCES))
 
 # Default target: check dependencies, build xxhash, and compile everything
 all: check-dependencies deps/xxhash/libxxhash.a $(EXECUTABLES)
 
 # Generic rule to compile any .cpp file into an executable
-%: %.cpp
+$(EXECUTABLE_DIR)/%: %.cpp
+	@mkdir -p $(EXECUTABLE_DIR) 
 	$(CXX) $(FLAGS) $< $(INCLUDE) $(LIBS) -o $@
 
 # Rule to build xxHash if it's missing
@@ -34,6 +37,6 @@ clean:
 	rm -f $(EXECUTABLES) deps/xxhash/xxhash.o
 
 distclean: clean
-	rm -f -r  ${EXECUTABLES} *.txt exp1_directory exp2_directory deps
+	rm -f -r  ${EXECUTABLE_DIR} *.txt exp1_directory exp2_directory deps
 
 .PHONY: all clean distclean check-dependencies

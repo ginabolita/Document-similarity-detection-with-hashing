@@ -343,6 +343,10 @@ def run_corpus_experiment(executables, dataset_dir, output_dir, k_values, t_valu
     
     return df
 
+
+#----------------------------------------------------
+# EXPERIMENTOS visualización
+#----------------------------------------------------
 def visualize_one_on_one_results(results_df, output_dir):
     """Create visualizations for one-on-one experiment results"""
     # Group by method and k
@@ -572,3 +576,78 @@ def generate_report(one_on_one_results, corpus_results, output_dir):
         f.write("  - [Add your conclusion based on the experimental results]\n")
     
     return report_path
+#----------------------------------------------------
+# MAIN FUNCTION
+#----------------------------------------------------
+def main():
+    parser = argparse.ArgumentParser(description='Document Similarity Methods Evaluation')
+    parser.add_argument('--mode', choices=['real', 'virtual'], required=True, help='Dataset mode: real or virtual')
+    parser.add_argument('--experiment', choices=['one-on-one', 'corpus'], required=True, help='Experiment type: one-on-one or corpus')
+    parser.add_argument('--k_values', nargs='+', type=int, required=True, help='List of k values to test')
+    parser.add_argument('--t_values', nargs='+', type=int, required=True, help='List of t values to test')
+    parser.add_argument('--threshold_values', nargs='+', type=float, default=[0.5, 0.6, 0.7, 0.8, 0.9], help='List of threshold values to test (for corpus mode)')
+    parser.add_argument('--num_docs', type=int, default=20, help='Number of documents to generate')
+    parser.add_argument('--prepare_datasets', action='store_true', help='Prepare datasets before running experiments')
+    
+    args = parser.parse_args()
+    
+    # Create directories
+    create_directories()
+    
+    # Setup logging
+    setup_logging()
+    
+    # Prepare datasets if requested
+    if args.prepare_datasets:
+        logging.info("Preparing datasets...")
+        if args.mode == 'real':
+            # Prepare real document dataset
+            base_doc_path = os.path.join('datasets', 'base_real.txt')
+            generate_base_document(min_distinct_words=50, output_path=base_doc_path)
+            create_permuted_documents(base_doc_path, args.num_docs, os.path.join('datasets', 'real'))
+        else:
+            # Prepare virtual document dataset
+            base_doc_path = os.path.join('datasets', 'base_virtual.txt')
+            generate_base_document(min_distinct_words=100, output_path=base_doc_path)
+            # Use the minimum k value for virtual document generation
+            min_k = min(args.k_values)
+            create_virtual_documents(base_doc_path, args.num_docs, min_k, os.path.join('datasets', 'virtual'))
+    
+    # Define executable paths
+    executables = {
+        'brute_force': './executables/jaccardBruteForce',
+        'minhash': './executables/jaccardMinHash',
+        'lsh_basic': './executables/jaccardLSHbase'
+    }
+    
+    corpus_executables = {
+        'lsh_bucketing': './executables/jaccardLSHbucketing',
+        'lsh_forest': './executables/jaccardLSHforest'
+    }
+    
+    # Run experiments
+    dataset_dir = os.path.join('datasets', args.mode)
+    output_dir = os.path.join('results', args.mode, args.experiment)
+    os.makedirs(output_dir, exist_ok=True)
+    
+    if args.experiment == 'one-on-one':
+        logging.info("Running one-on-one experiments...")
+        results = run_one_on_one_experiment(executables, dataset_dir, output_dir, args.k_values, args.t_values)
+        visualize_one_on_one_results(results, output_dir)
+        corpus_results = None
+    else:  # corpus mode
+        logging.info("Running corpus experiments...")
+        results = run_corpus_experiment(corpus_executables, dataset_dir, output_dir, args.k_values, args.t_values, args.threshold_values)
+        visualize_corpus_results(results, output_dir)
+        one_on_one_results = None
+    
+    # Generate report
+    if args.experiment == 'one-on-one':
+        generate_report(results, None, output_dir)
+    else:
+        generate_report(None, results, output_dir)
+    
+    logging.info("Experiments completed successfully.")
+
+if __name__ == "__main__":
+    main()

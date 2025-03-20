@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
   }
   // basicText.json contiene 5 frases. Es decir 5! permutaciones en base a
   // frases posibles.
-  ifstream file("basicText.json");
+ifstream file("../basicText.json");
   if (!file.is_open()) {
     cerr << "Error: Could not open JSON file." << endl;
     return 1;

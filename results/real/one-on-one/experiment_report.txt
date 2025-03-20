@@ -1,0 +1,21 @@
+Document Similarity Methods Evaluation Report
+===========================================
+
+1. One-on-One Comparison Results
+-------------------------------
+
+Method Performance Comparison:
+  lsh_basic: Average runtime = nan seconds
+  minhash: Average runtime = nan seconds
+
+Parameter Effects:
+  lsh_basic:
+    k=5: Average runtime = nan seconds
+
+  minhash:
+    k=5: Average runtime = nan seconds
+
+2. Corpus Mode Results
+---------------------
+
+Method Performance Comparison:

@@ -173,7 +173,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  ifstream file("basicText.json");
+ifstream file("../basicText.json");
   if (!file.is_open()) {
     cerr << "Error: Could not open JSON file." << endl;
     return 1;
