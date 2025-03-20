@@ -19,7 +19,6 @@
 #include <iomanip>
 #include <functional>
 
-
 #define SIMILARITY_THRESHOLD 0.01f // Threshold for considering documents similar
 
 using namespace std;
@@ -41,19 +40,22 @@ struct Document
   Document(const string &name) : filename(name) {}
 };
 
-struct LSHForestNode {
-  unordered_map<int, LSHForestNode*> children;
+struct LSHForestNode
+{
+  unordered_map<int, LSHForestNode *> children;
   vector<int> docIndices;
-  
-  ~LSHForestNode() {
-    for (auto& pair : children) {
+
+  ~LSHForestNode()
+  {
+    for (auto &pair : children)
+    {
       delete pair.second;
     }
   }
 };
 
 // LSH Forest structure (replaces the bandBucketMap)
-vector<LSHForestNode*> lshForest;
+vector<LSHForestNode *> lshForest;
 
 //---------------------------------------------------------------------------
 // Performance Measurement <- Marcel, el timer para y mide el tiempo automaticamente cuando se destruye
@@ -74,26 +76,29 @@ public:
   {
     auto endTime = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();
-    cout << "[Performance] " << operationName << ": " << duration << " ms" << endl;
+    // cout << "[Performance] " << operationName << ": " << duration << " ms" << endl;
   }
 };
 
 // Initialize LSH Forest (replaces initializeLSHBuckets)
-void initializeLSHForest(int numTrees) {
+void initializeLSHForest(int numTrees)
+{
   // Clean up any existing trees
-  for (auto* tree : lshForest) {
+  for (auto *tree : lshForest)
+  {
     delete tree;
   }
-  
+
   lshForest.clear();
   lshForest.resize(numTrees, nullptr);
-  
+
   // Initialize root nodes
-  for (int i = 0; i < numTrees; i++) {
+  for (int i = 0; i < numTrees; i++)
+  {
     lshForest[i] = new LSHForestNode();
   }
-  
-  cout << "Initialized " << numTrees << " LSH Forest trees" << endl;
+
+  // cout << "Initialized " << numTrees << " LSH Forest trees" << endl;
 }
 
 //---------------------------------------------------------------------------
@@ -348,34 +353,39 @@ size_t hashBand(const vector<int> &band)
   return hashValue;
 }
 
-void insertIntoLSHForest(const vector<int>& signature, int docIndex, int numTrees) {
+void insertIntoLSHForest(const vector<int> &signature, int docIndex, int numTrees)
+{
   // Calculate prefix length for each tree
   int prefixLength = signature.size() / numTrees;
-  if (prefixLength == 0) prefixLength = 1;
-  
-  cout << "Adding document " << docIndex << " to LSH Forest (signature size: " 
-       << signature.size() << ", prefix length: " << prefixLength << ")" << endl;
-  
+  if (prefixLength == 0)
+    prefixLength = 1;
+
+  // cout << "Adding document " << docIndex << " to LSH Forest (signature size: "
+  //     << signature.size() << ", prefix length: " << prefixLength << ")" << endl;
+
   // For each tree in the forest
-  for (int t = 0; t < numTrees; t++) {
+  for (int t = 0; t < numTrees; t++)
+  {
     // Extract the signature prefix for this tree
     int startIdx = t * prefixLength;
     int endIdx = min((t + 1) * prefixLength, static_cast<int>(signature.size()));
-    
+
     // Navigate the trie and insert document
-    LSHForestNode* currentNode = lshForest[t];
-    
-    for (int i = startIdx; i < endIdx; i++) {
+    LSHForestNode *currentNode = lshForest[t];
+
+    for (int i = startIdx; i < endIdx; i++)
+    {
       int hashValue = signature[i];
-      
+
       // Create path if it doesn't exist
-      if (currentNode->children.find(hashValue) == currentNode->children.end()) {
+      if (currentNode->children.find(hashValue) == currentNode->children.end())
+      {
         currentNode->children[hashValue] = new LSHForestNode();
       }
-      
+
       // Move to next node
       currentNode = currentNode->children[hashValue];
-      
+
       // Add document to each node along the path
       currentNode->docIndices.push_back(docIndex);
     }
@@ -383,103 +393,121 @@ void insertIntoLSHForest(const vector<int>& signature, int docIndex, int numTree
 }
 
 // Depth-first search to find all document indices within a given depth
-void collectDocumentIndices(LSHForestNode* node, int depth, int maxDepth, unordered_set<int>& docIndices) {
-  if (!node || depth > maxDepth) return;
-  
+void collectDocumentIndices(LSHForestNode *node, int depth, int maxDepth, unordered_set<int> &docIndices)
+{
+  if (!node || depth > maxDepth)
+    return;
+
   // Add documents at current node
   docIndices.insert(node->docIndices.begin(), node->docIndices.end());
-  
+
   // Continue search through children
-  for (auto& child : node->children) {
+  for (auto &child : node->children)
+  {
     collectDocumentIndices(child.second, depth + 1, maxDepth, docIndices);
   }
 }
 
 // Query the LSH Forest for similar documents (replaces findSimilarDocumentPairs)
-vector<pair<int, int>> queryLSHForest(const vector<Document>& documents, int numTrees, float threshold) {
-  cout << "Starting LSH Forest query with " << documents.size() 
-       << " documents, " << numTrees << " trees, threshold " << threshold << endl;
-  
+vector<pair<int, int>> queryLSHForest(const vector<Document> &documents, int numTrees, float threshold)
+{
+  // cout << "Starting LSH Forest query with " << documents.size()
+  //      << " documents, " << numTrees << " trees, threshold " << threshold << endl;
+
   // Calculate maximum depth based on threshold
   // The depth corresponds to prefix length: deeper = more stringent matching
   int maxDepth = static_cast<int>((1.0 - threshold) * (documents[0].signature.size() / numTrees));
-  
-  cout << "Using max depth of " << maxDepth << " for threshold " << threshold << endl;
-  
+
+  // cout << "Using max depth of " << maxDepth << " for threshold " << threshold << endl;
+
   // Set to store pairs of similar documents (to avoid duplicates)
   set<pair<int, int>> similarPairsSet;
-  
+
   // For each document, query the forest
-  for (size_t i = 0; i < documents.size(); i++) {
-    const Document& doc = documents[i];
+  for (size_t i = 0; i < documents.size(); i++)
+  {
+    const Document &doc = documents[i];
     int prefixLength = doc.signature.size() / numTrees;
-    if (prefixLength == 0) prefixLength = 1;
-    
+    if (prefixLength == 0)
+      prefixLength = 1;
+
     // For each tree
-    for (int t = 0; t < numTrees; t++) {
+    for (int t = 0; t < numTrees; t++)
+    {
       // Calculate start index for this tree's prefix
       int startIdx = t * prefixLength;
-      
+
       // Navigate the trie to find matching prefix
-      LSHForestNode* currentNode = lshForest[t];
+      LSHForestNode *currentNode = lshForest[t];
       int depth = 0;
-      
+
       // Follow exact path as far as possible
-      while (depth < prefixLength && currentNode) {
+      while (depth < prefixLength && currentNode)
+      {
         int hashValue = doc.signature[startIdx + depth];
-        
-        if (currentNode->children.find(hashValue) != currentNode->children.end()) {
+
+        if (currentNode->children.find(hashValue) != currentNode->children.end())
+        {
           currentNode = currentNode->children[hashValue];
           depth++;
-        } else {
+        }
+        else
+        {
           break;
         }
       }
-      
+
       // Collect candidate documents at this depth and below (up to maxDepth)
       unordered_set<int> candidates;
       collectDocumentIndices(currentNode, depth, depth + maxDepth, candidates);
-      
+
       // Generate document pairs
-      for (int docId : candidates) {
+      for (int docId : candidates)
+      {
         // Skip self-comparison
-        if (docId == static_cast<int>(i)) continue;
-        
+        if (docId == static_cast<int>(i))
+          continue;
+
         // Ensure consistent ordering (smaller index first)
         int doc1 = static_cast<int>(i);
         int doc2 = docId;
-        if (doc1 > doc2) swap(doc1, doc2);
-        
+        if (doc1 > doc2)
+          swap(doc1, doc2);
+
         similarPairsSet.insert({doc1, doc2});
       }
     }
   }
-  
+
   // Convert set to vector
   vector<pair<int, int>> similarPairs(similarPairsSet.begin(), similarPairsSet.end());
-  
-  cout << "Found " << similarPairs.size() << " candidate pairs" << endl;
-  
+
+  // cout << "Found " << similarPairs.size() << " candidate pairs" << endl;
+
   // Filter pairs based on actual similarity
   vector<pair<int, int>> filteredPairs;
-  for (const auto& pair : similarPairs) {
+  for (const auto &pair : similarPairs)
+  {
     float similarity = estimatedJaccardSimilarity(
         documents[pair.first].signature,
         documents[pair.second].signature);
-    
-    if (similarity >= threshold) {
+
+    if (similarity >= threshold)
+    {
       filteredPairs.push_back(pair);
-      cout << "Confirmed similar pair: " << documents[pair.first].filename 
-           << " and " << documents[pair.second].filename 
-           << " (similarity: " << similarity << ")" << endl;
+      // cout << "Confirmed similar pair: " << documents[pair.first].filename
+      //     << " and " << documents[pair.second].filename
+      //    << " (similarity: " << similarity << ")" << endl;
     }
   }
-  
+
   return filteredPairs;
 }
 
-void cleanupLSHForest() {
-  for (auto* tree : lshForest) {
+void cleanupLSHForest()
+{
+  for (auto *tree : lshForest)
+  {
     delete tree;
   }
   lshForest.clear();
@@ -561,16 +589,16 @@ int main(int argc, char *argv[])
   }
 
   // Adjust number of bands based on threshold
-  cout << "Using " << b << " bands with threshold " << SIMILARITY_THRESHOLD << endl;
+  // cout << "Using " << b << " bands with threshold " << SIMILARITY_THRESHOLD << endl;
 
   // If threshold is very low, suggest using more bands
-  if (SIMILARITY_THRESHOLD < 0.1 && b < 50) {
-    cout << "Warning: For low threshold (" << SIMILARITY_THRESHOLD 
-        << "), consider using more bands (current: " << b << ")" << endl;
+  if (SIMILARITY_THRESHOLD < 0.1 && b < 50)
+  {
+    cout << "Warning: For low threshold (" << SIMILARITY_THRESHOLD
+         << "), consider using more bands (current: " << b << ")" << endl;
   }
 
-
-  //bloque de codigo para que al finalizar se destruya el timer (y mida el tiempo automaticamente)
+  // bloque de codigo para que al finalizar se destruya el timer (y mida el tiempo automaticamente)
   { // Initialize hash functions
     Timer timerInit("Initialize hash functions");
     initializeHashFunctions();
@@ -581,10 +609,12 @@ int main(int argc, char *argv[])
 
   if (corpusMode)
   {
+    cout << "Format: " << endl;
+    cout << "doc1 doc2 estimated_similarity exact_similarity" << endl;
     // Process all files in corpus directory
     {
       Timer timerProcessCorpus("Processing corpus");
-      cout << "Processing files in directory: " << path1 << endl;
+      // cout << "Processing files in directory: " << path1 << endl;
 
       for (const auto &entry : filesystem::directory_iterator(path1))
       {
@@ -601,7 +631,7 @@ int main(int argc, char *argv[])
           doc.signature = computeMinHashSignature(doc.kShingles);
 
           documents.push_back(doc);
-          cout << "Processed: " << filename << " - " << doc.kShingles.size() << " shingles" << endl;
+          // cout << "Processed: " << filename << " - " << doc.kShingles.size() << " shingles" << endl;
         }
       }
     }
@@ -625,7 +655,7 @@ int main(int argc, char *argv[])
     }
 
     // Report results
-    cout << "\nFound " << similarPairs.size() << " similar document pairs:" << endl;
+    // cout << "\nFound " << similarPairs.size() << " similar document pairs:" << endl;
     for (const auto &pair : similarPairs)
     {
       float estSimilarity = estimatedJaccardSimilarity(
@@ -636,12 +666,33 @@ int main(int argc, char *argv[])
           documents[pair.first].kShingles,
           documents[pair.second].kShingles);
 
-      cout << "Similar documents:" << endl;
-      cout << "  - " << documents[pair.first].filename << endl;
-      cout << "  - " << documents[pair.second].filename << endl;
-      cout << "  - Estimated similarity: " << estSimilarity << endl;
-      cout << "  - Exact similarity: " << exactSimilarity << endl;
-      cout << endl;
+      /*
+  cout << "Similar documents:" << endl;
+  cout << "  - " << documents[pair.first].filename << endl;
+  cout << "  - " << documents[pair.second].filename << endl;
+  cout << "  - Estimated similarity: " << estSimilarity << endl;
+  cout << "  - Exact similarity: " << exactSimilarity << endl;
+  cout << endl;*/
+      string d1 = documents[pair.first].filename;
+      string d2 = documents[pair.second].filename;
+
+      
+
+      if (d1.size() == 29)
+      {
+        d1 = string(1, d1[23]) + string(1, d1[24]);
+      }
+      else
+        d1 = d1[23];
+      if (d2.size() == 29)
+      {
+        d2 = string(1, d2[23]) + string(1, d2[24]);
+      }
+      else
+        d2 = d2[23];
+
+      cout << d1 << "," << d2
+           << "," << estSimilarity << "," << exactSimilarity << endl;
     }
   }
   else if (singleVsCorpusMode)
@@ -730,7 +781,7 @@ int main(int argc, char *argv[])
 
     {
       Timer timerProcessFiles("Processing files");
-      cout << "Comparing two files: " << path1 << " and " << path2 << endl;
+      // cout << "Comparing two files: " << path1 << " and " << path2 << endl;
 
       string content1 = readFile(path1);
       string content2 = readFile(path2);
@@ -741,8 +792,8 @@ int main(int argc, char *argv[])
       doc1.signature = computeMinHashSignature(doc1.kShingles);
       doc2.signature = computeMinHashSignature(doc2.kShingles);
 
-      cout << "Processed: " << path1 << " - " << doc1.kShingles.size() << " shingles" << endl;
-      cout << "Processed: " << path2 << " - " << doc2.kShingles.size() << " shingles" << endl;
+      // cout << "Processed: " << path1 << " - " << doc1.kShingles.size() << " shingles" << endl;
+      // cout << "Processed: " << path2 << " - " << doc2.kShingles.size() << " shingles" << endl;
     }
 
     {
