@@ -161,7 +161,7 @@ void generaDocumentos(const unordered_set<string>& shingles,
   }
 
   // Generate similarity matrix report
-  ofstream simMatrix(path + "/similarity_matrix.txt");
+  ofstream simMatrix("datasets/similarity_matrix.txt");
   if (simMatrix.is_open()) {
     simMatrix << "Expected Similarity Matrix between documents:" << endl;
     simMatrix << "Total k-shingles in base set: " << totalShingles << endl

@@ -104,6 +104,7 @@ def run_corpus_mode(executable_path,
             'status': 'error'
         }
 
+
 def parse_corpus_output(result):
     """Parse the output from a corpus mode experiment"""
     # This function will need to be adapted based on the actual output format of your C++ executables
@@ -140,33 +141,34 @@ def parse_corpus_output(result):
                     doc2 = parts[1].strip()
                     est_similarity = float(parts[2].strip())
                     exact_similarity = float(parts[3].strip())
-                    similar_pairs.append((doc1, doc2, est_similarity, exact_similarity))
+                    similar_pairs.append(
+                        (doc1, doc2, est_similarity, exact_similarity))
     else:
 
-      for line in lines:
-          if 'Similar pair:' in line:
-              pair = line.split(':')[1].strip()
-              doc1, doc2 = pair.split(',')
-              similar_pairs.append((doc1.strip(), doc2.strip()))
-          elif 'Index build time:' in line:
-              try:
-                  index_build_time = float(line.split(':')[1].strip())
-              except (ValueError, IndexError):
-                  pass
-          elif 'Query time:' in line:
-              try:
-                  query_time = float(line.split(':')[1].strip())
-              except (ValueError, IndexError):
-                  pass
+        for line in lines:
+            if 'Similar pair:' in line:
+                pair = line.split(':')[1].strip()
+                doc1, doc2 = pair.split(',')
+                similar_pairs.append((doc1.strip(), doc2.strip()))
+            elif 'Index build time:' in line:
+                try:
+                    index_build_time = float(line.split(':')[1].strip())
+                except (ValueError, IndexError):
+                    pass
+            elif 'Query time:' in line:
+                try:
+                    query_time = float(line.split(':')[1].strip())
+                except (ValueError, IndexError):
+                    pass
 
-      return {
-          'dataset': result['dataset'],
-          'similar_pairs': similar_pairs,
-          'index_build_time': index_build_time,
-          'query_time': query_time,
-          'total_runtime': result['runtime'],
-          'status': result['status']
-      }
+        return {
+            'dataset': result['dataset'],
+            'similar_pairs': similar_pairs,
+            'index_build_time': index_build_time,
+            'query_time': query_time,
+            'total_runtime': result['runtime'],
+            'status': result['status']
+        }
 
 
 def run_corpus_experiment(executables, dataset_dir, output_dir, k_values,

@@ -41,10 +41,10 @@ clean:
 	rm -f $(OUTDIR)/* deps/xxhash/xxhash.o
 
 distclean: clean
-	rm -f exp1_directory/*.txt exp2_directory/*.txt
-	rm -rf deps $(OUTDIR)
+	rm -f results/virtual/corpus/* datasets/real/* datasets/virtual/* logs/*
 
 ultraclean: distclean
 	rm -rf results datasets logs
+	rm -rf deps $(OUTDIR)
 
-.PHONY: all clean distclean check-dependencies
+.PHONY: all clean distclean ultraclean check-dependencies
