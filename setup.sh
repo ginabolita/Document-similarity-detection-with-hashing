@@ -32,6 +32,17 @@ else
 fi
 
 
+if [ "$OS" = "Linux" ]; then
+    echo "Installing Python libraries (pandas, numpy, matplotlib)..."
+    $INSTALL_CMD python3-pandas python3-numpy python3-matplotlib
+elif [ "$OS" = "Darwin" ]; then
+    echo "Installing Python libraries (pandas, numpy, matplotlib)..."
+    pip3 install pandas numpy matplotlib
+else
+    echo "Unsupported OS for Python library installation."
+    exit 1
+fi
+
 if [! -d "deps/"]; then
     mkdir -p deps
 fi
