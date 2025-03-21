@@ -21,9 +21,11 @@ def setup_logging():
     logging.basicConfig(
         filename='logs/experiment.log',
         level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        filemode='w'
     )
 
+'''
 #----------------------------------------------------
 # GENERACIÓN DOCUMENTO BASE
 #----------------------------------------------------
@@ -148,7 +150,7 @@ def run_one_on_one(executable_path, doc1_path, doc2_path, output_file, k=None, t
             'status': 'success'
         }
     except subprocess.CalledProcessError as e:
-        print(f"error running {executable_path}: {e}")
+        #print(f"error running {executable_path}: {e}")
         logging.error(f"Error running {executable_path}: {e}")
         return {
             'doc1': os.path.basename(doc1_path),
@@ -157,6 +159,7 @@ def run_one_on_one(executable_path, doc1_path, doc2_path, output_file, k=None, t
             'runtime': None,
             'status': 'error'
         }
+'''
 
 def run_corpus_mode(executable_path, dataset_path, output_file, k=None, t=None, b=None, threshold=None):
     """Run corpus mode experiment"""
@@ -196,8 +199,8 @@ def run_corpus_mode(executable_path, dataset_path, output_file, k=None, t=None, 
         }
     except subprocess.CalledProcessError as e:
         command = " ".join(cmd)
-        print(f"error running {executable_path}: {e}, try running: {command} ")
-        logging.error(f"Error running corpus mode {executable_path}: {e}")
+        #print(f"error running {executable_path}: {e}, try running: {command} ")
+        logging.error(f"Error running corpus mode {executable_path}: {e} \n try running: {command}")
         return {
             'dataset': dataset_path,
             'output': e.stderr,
@@ -622,17 +625,39 @@ def main():
     if args.prepare_datasets:
         logging.info("Preparing datasets...")
         if args.mode == 'real':
-            # Prepare real document dataset
-            base_doc_path = os.path.join('datasets', 'base_real.txt')
-            generate_base_document(min_distinct_words=50, output_path=base_doc_path)
-            create_permuted_documents(base_doc_path, args.num_docs, os.path.join('datasets', 'real'))
+            gen_k = None
+            cmd = "./executables/exp1_genRandPerm"
         else:
-            # Prepare virtual document dataset
-            base_doc_path = os.path.join('datasets', 'base_virtual.txt')
-            generate_base_document(min_distinct_words=100, output_path=base_doc_path)
-            # Use the minimum k value for virtual document generation
-            min_k = min(args.k_values)
-            create_virtual_documents(base_doc_path, args.num_docs, min_k, os.path.join('datasets', 'virtual'))
+            gen_k = str(random.randint(4, 10))
+            cmd = "./executables/exp2_genRandShingles"
+        try:
+            start_time = time.time()
+            result = subprocess.run(
+                [cmd, gen_k, str(args.num_docs)], capture_output=True, text=True, check=True
+            )
+            end_time = time.time()
+
+            # Get the directory path from stdout
+            output_dir = result.stdout.strip()
+
+            # Log the run
+            logging.info(f"Successfully ran exp1 and created {output_dir} containing {args.num_docs} documents")
+
+            return {
+                "dataset": output_dir,
+                "output": result.stdout,
+                "runtime": end_time - start_time,
+                "status": "success",
+            }
+        except subprocess.CalledProcessError as e:
+            #print(f"Error running: {e}")
+            logging.error(f"Error running exp1: {e}")
+            return {
+                "dataset": None,
+                "output": e.stderr,
+                "runtime": None,
+                "status": "error",
+            }
     
     # Define executable paths
     executables = {

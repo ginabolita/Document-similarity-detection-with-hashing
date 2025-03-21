@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <ctime>
 #include <fstream>
+#include <filesystem>
 #include <iostream>
 #include "deps/nlohmann/json.hpp"  // Incluye la biblioteca nlohmann/json
 #include <random>
@@ -70,16 +71,23 @@ void generaDocumentos(const vector<string>& permutaciones, const string& path) {
     file << permutaciones[i];
     file.close();
 
-    cout << "Generated file: " << filename << endl;
+    //cout << "Generated file: " << filename << endl;
   }
 }
 
-bool makeDirectory(const string& path) {
-#ifdef _WIN32
-  return _mkdir(path.c_str()) == 0;
-#else
-  return mkdir(path.c_str(), 0777) == 0;
-#endif
+bool makeDirectory(const std::string& path) {
+    if (std::filesystem::exists(path)) {
+        std::cout << path << std::endl;  // Path already exists
+        return true;
+    } 
+    
+    if (std::filesystem::create_directory(path)) {
+        std::cout << path << std::endl;  // Successfully created
+        return true;
+    } 
+    
+    std::cerr << "Warning: The directory '" << path << "' could not be created" << std::endl;
+    return false;
 }
 
 int main(int argc, char* argv[]) {
@@ -115,13 +123,9 @@ ifstream file("basicText.json");
 
   vector<string> permutaciones = permutabasicText(frases, D);
 
-  string path = "exp1_directory";
+  string path = "datasets/real/";
       // Crear la carpeta
-  if (!makeDirectory(path)) {
-    cerr << "Warning: The directory '" << path << "' exists or could not be created" << endl;
-  } else {
-    cout << "Folder created" << endl;
-  }
+  makeDirectory(path);
 
   generaDocumentos(permutaciones, path);
 

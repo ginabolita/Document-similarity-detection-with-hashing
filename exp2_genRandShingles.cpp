@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <fstream>
+#include <filesystem>
 #include <iostream>
 #include <random>
 #include <set>
@@ -92,7 +93,7 @@ unordered_set<string> generateShingles(const string& text) {
   for (auto shingle : shingles) {
     ++count;
   }
-  cout << "hay :" << count << " k-shingles" << endl;
+  //cout << "hay :" << count << " k-shingles" << endl;
 
   return shingles;
 }
@@ -137,16 +138,23 @@ void generaDocumentos(const unordered_set<string>& shingles, const string& path)
       file << shingle << endl;
     }
     file.close();
-    cout << "Generated file: " << filename << endl;
+    //cout << "Generated file: " << filename << endl;
   }
 }
 
-bool makeDirectory(const string& path) {
-#ifdef _WIN32
-  return _mkdir(path.c_str()) == 0;
-#else
-  return mkdir(path.c_str(), 0777) == 0;
-#endif
+bool makeDirectory(const std::string& path) {
+    if (std::filesystem::exists(path)) {
+        std::cout << path << std::endl;  // Path already exists
+        return true;
+    } 
+    
+    if (std::filesystem::create_directory(path)) {
+        std::cout << path << std::endl;  // Successfully created
+        return true;
+    } 
+    
+    std::cerr << "Warning: The directory '" << path << "' could not be created" << std::endl;
+    return false;
 }
 
 //---------------------------------------------------------------------------
@@ -190,14 +198,9 @@ ifstream file("basicText.json");
   string basicText = jsonData["experimento_2"]["basicText"];
 
   unordered_set<string> shingles = generateShingles(basicText);
-  string path = "exp2_directory";
+  string path = "datasets/virtual/";
       // Crear la carpeta
-  if (!makeDirectory(path)) {
-    cerr << "Warning: The directory '" << path
-         << "' exists or could not be created" << endl;
-  } else {
-    cout << "Folder created" << endl;
-  }
+  makeDirectory(path);
 
   generaDocumentos(shingles, path);
 
