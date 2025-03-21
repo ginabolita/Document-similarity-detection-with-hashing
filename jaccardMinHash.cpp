@@ -14,7 +14,6 @@
 #include <regex>
 #include "deps/nlohmann/json.hpp"
 
-
 using namespace std;
 using namespace nlohmann;
 namespace fs = std::filesystem;
@@ -25,15 +24,15 @@ vector<pair<int, int>> hashCoefficients; // [a, b] for hashFunction(x) = (ax + b
 int p;                                   // Prime number for hash functions
 unordered_set<string> stopwords;         // Stopwords
 
-
-int extractNumber(const std::string& filename) {
+int extractNumber(const std::string &filename)
+{
     std::regex pattern(R"(docExp2_(\d+)\.txt)");
     std::smatch match;
-    if (std::regex_search(filename, match, pattern)) {
+    if (std::regex_search(filename, match, pattern))
+    {
         return std::stoi(match[1]);
     }
     return -1; // Si no se encuentra un número, devuelve -1 o maneja el error como prefieras
-
 }
 
 // StopWordsZone ------------------------------------------------------------------------
@@ -68,8 +67,7 @@ unordered_set<string> loadStopwords(const string &filename)
 
 //-----------------------------------------------------------------------------------------
 
-
-//Format Zone ----------------------------------------------------------------------------
+// Format Zone ----------------------------------------------------------------------------
 
 // Remove punctuation and convert to lowercase
 string normalize(const string &word)
@@ -159,7 +157,6 @@ int nextPrime(int n)
 }
 
 //----------------------------------------------------------------------------------------
-
 
 // Algoritmo Zone ---------------------------------------------------------------------------
 
@@ -277,6 +274,7 @@ bool isTextFile(const string &filename)
 
 int main(int argc, char *argv[])
 {
+    auto startTime = chrono::high_resolution_clock::now();
     stopwords = loadStopwords("stopwords-en.json");
 
     if (argc != 4)
@@ -287,7 +285,7 @@ int main(int argc, char *argv[])
     }
 
     string directory = argv[1];
-    
+
     // Get k value from command line
     k = std::stoi(argv[2]);
     if (k <= 0)
@@ -295,7 +293,7 @@ int main(int argc, char *argv[])
         std::cerr << "Error: k must be positive" << std::endl;
         return 1;
     }
-    
+
     // Get numHashFunctions value from command line
     numHashFunctions = std::stoi(argv[3]);
     if (numHashFunctions <= 0)
@@ -327,8 +325,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    //std::cout << "Found " << files.size() << " text files in directory" << std::endl;
-    
+    // std::cout << "Found " << files.size() << " text files in directory" << std::endl;
+
     // Initialize hash functions
     initializeHashFunctions();
 
@@ -338,53 +336,54 @@ int main(int argc, char *argv[])
 
     for (const auto &file : files)
     {
-        //std::cout << "Processing file: " << file << std::endl;
+        // std::cout << "Processing file: " << file << std::endl;
         string text = readFile(file);
-        
+
         if (text.empty())
         {
             std::cerr << "Warning: File " << file << " is empty or could not be read. Skipping." << std::endl;
             continue;
         }
-        
+
         unordered_set<string> kShingles;
         size_t estimatedSize = max(1UL, (unsigned long)text.length() / 10);
         kShingles.reserve(estimatedSize);
-        
+
         tratar(text, kShingles);
-        
+
         if (kShingles.empty())
         {
-            std::cerr << "Warning: No k-shingles could be extracted from file " << file 
+            std::cerr << "Warning: No k-shingles could be extracted from file " << file
                       << ". Make sure the file has at least " << k << " words. Skipping." << std::endl;
             continue;
         }
-        
+
         vector<int> signature = computeMinHashSignature(kShingles);
         signatures.push_back({file, signature});
         shingleSets.push_back({file, kShingles});
     }
 
     // Compare all pairs of files
-    //std::cout << "\nSimilarity Results:\n" << std::endl;
+    // std::cout << "\nSimilarity Results:\n" << std::endl;
     std::cout << "Doc1,Doc2,Sim%" << std::endl;
-   
+
     for (size_t i = 0; i < signatures.size(); i++)
     {
         for (size_t j = i + 1; j < signatures.size(); j++)
         {
             float similarity = SimilaridadDeJaccard(signatures[i].second, signatures[j].second);
-            
+
             // Get just the filenames without the full path for better readability
             string fileA = fs::path(signatures[i].first).filename().string();
             string fileB = fs::path(signatures[j].first).filename().string();
-            
+
             int numA = extractNumber(fileA);
             int numB = extractNumber(fileB);
 
-            std::cout << numA << "," << numB << "," << similarity * 100 << std::endl;
+            std::cout << numA << "," << numB << "," << similarity << std::endl;
         }
     }
-
-    return 0;
+    auto endTime = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime);
+    cout << "time: " << duration.count() << " ms" << endl;
 }
