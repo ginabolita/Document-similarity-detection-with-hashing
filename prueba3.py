@@ -194,7 +194,7 @@ def run_corpus_experiment(executables, dataset_dir, output_dir, k_values,
                     for threshold in threshold_values_filtered:
                         output_file = os.path.join(
                             output_dir,
-                            f"{exec_name}_corpus_k{k}_t{t or 'NA'}_b{b or 'NA'}_th{threshold or 'NA'}.txt"
+                            f"{exec_name}_corpus_k{k}_t{t or 'NA'}_b{b or 'NA'}_th{threshold or 'NA'}.csv"
                         )
 
                         # Run the executable
