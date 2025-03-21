@@ -19,12 +19,14 @@
 #include <iomanip>
 #include <functional>
 
-#define SIMILARITY_THRESHOLD 0.01f // Threshold for considering documents similar
+
+
 
 using namespace std;
 using namespace nlohmann;
 unsigned int k;                          // Tamaño de los k-shingles
-unsigned int t = 100;                    // Numero de funciones hash para el minhash (replaces numHashFunctions)
+unsigned int t;                  // Numero de funciones hash para el minhash (replaces numHashFunctions)
+float SIMILARITY_THRESHOLD;
 vector<pair<int, int>> hashCoefficients; // [a, b] for funcionhash(x) = (ax + b) % p
 int p;                                   // Prime number for hash functions
 unordered_set<string> stopwords;         // Stopwords
@@ -521,11 +523,11 @@ void cleanupLSHForest()
 //---------------------------------------------------------------------------
 void printUsage(const char *programName)
 {
-  cout << "Usage options:" << endl;
-  cout << "1. Compare two files: " << programName << " <file1> <file2> <k> <b>" << endl;
-  cout << "2. Compare one file with corpus: " << programName << " <file> <corpus_dir> <k> <b>" << endl;
-  cout << "3. Compare all files in corpus: " << programName << " <corpus_dir> <k> <b>" << endl;
-  cout << "where k is the shingle size and b is the number of bands" << endl;
+  cout << "1. Compare two files: " << programName << " <file1> <file2> <k> <b> <t> <sim_threshold>" << endl;
+  cout << "2. Compare one file with corpus: " << programName << " <file> <corpus_dir> <k> <b> <t> <sim_threshold>"  << endl;
+  cout << "3. Compare all files in corpus: " << programName << " <corpus_dir> <k> <b> <t> <sim_threshold>" << endl;
+  cout << "where k is the shingle size, b is the number of bands and t the number of hash functions" << endl;
+
 }
 
 void writeCSV(const string& filename, vector<vector<float>>& data) {
@@ -569,7 +571,7 @@ int main(int argc, char *argv[])
   stopwords = loadStopwords("stopwords-en.json");
 
   // Check command line arguments
-  if (argc < 4 || argc > 5)
+  if (argc < 6 || argc > 7)
   {
     printUsage(argv[0]);
     return 1;
@@ -582,8 +584,8 @@ int main(int argc, char *argv[])
   bool singleVsCorpusMode = false;
 
   // Determine mode based on arguments
-  if (argc == 4)
-  { // Corpus mode: program <corpus_dir> <k> <b>
+  if (argc == 6)
+  { // Corpus mode: program <corpus_dir> <k> <b> <t> <sim_threshold>
     path1 = argv[1];
     if (!filesystem::is_directory(path1))
     {
@@ -593,7 +595,7 @@ int main(int argc, char *argv[])
     corpusMode = true;
     paramOffset = 1;
   }
-  else if (argc == 5)
+  else if (argc == 7)
   { // Two files or one file vs corpus
     path1 = argv[1];
     path2 = argv[2];
@@ -625,6 +627,23 @@ int main(int argc, char *argv[])
     cerr << "Error: b must be positive" << endl;
     return 1;
   }
+
+    // Get t value from command line
+  int t = stoi(argv[3 + paramOffset]);
+  if (t <= 0)
+  {
+    cerr << "Error: t must be positive" << endl;
+    return 1;
+  }
+
+      // Get t value from command line
+  int SIMILARITY_THRESHOLD = stof(argv[4 + paramOffset]);
+  if (t <= 0)
+  {
+    cerr << "Error: similarity threshold must be positive" << endl;
+    return 1;
+  }
+
 
   // Adjust number of bands based on threshold
   // cout << "Using " << b << " bands with threshold " << SIMILARITY_THRESHOLD << endl;
