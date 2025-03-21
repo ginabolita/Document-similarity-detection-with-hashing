@@ -49,7 +49,8 @@ def run_corpus_mode(executable_path,
                 'status': 'error'
             }
         # Add parameters in the required order
-        cmd.extend([str(k), str(b), str(t), str(threshold)])
+        #PARA PONER T Y THRESHOLD AQUI
+        cmd.extend([str(k), str(b)]);#, str(t), str(threshold)])
     else:
         # Add parameters if provided for other executables
         if k is not None:

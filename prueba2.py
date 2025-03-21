@@ -8,7 +8,7 @@ def ejecutar_programa(nombre_programa, *args):
     Ejecuta un programa en C++ con los argumentos proporcionados y captura su salida.
     """
     # Construye el comando con los argumentos
-    comando = [f"./{nombre_programa}"] + [str(arg) for arg in args]
+    comando = [f"./executables/{nombre_programa}"] + [str(arg) for arg in args]
     
     # Ejecuta el programa
     resultado = subprocess.run(comando, capture_output=True, text=True)
@@ -48,6 +48,8 @@ def main():
     parser = argparse.ArgumentParser(description='Document Similarity Methods Evaluation')
     parser.add_argument('--k_values', nargs='+', type=int, required=True, help='List of k values to test')
     parser.add_argument('--b_values', nargs='+', type=int, required=True, help='List of b values to test')
+    parser.add_argument('--t_values', nargs='+', type=int, required=True, help='List of t values to test')
+    parser.add_argument('--s_values', nargs='+', type=float, required=True, help='List of s values to test')
     parser.add_argument('--num_docs', type=int, default=20, help='Number of documents to generate')
     parser.add_argument('--num_docs2', type=int, default=30, help='Number of documents to generate')
     
@@ -80,23 +82,25 @@ def main():
         # Procesa la salida de exp2_genRandShingles (aquí puedes personalizar)
         print(f"Salida para k={k}: {salida_programa2}")
 
-    # Ejecuta jaccardLSHbucketing y jaccardLSHforest para cada combinación de k y b
+    # Ejecuta jaccardLSHbucketing y jaccardLSHforest para cada combinación de k, b, t y s
     print("Ejecutando jaccardLSHbucketing y jaccardLSHforest...")
     for k in args.k_values:
         for b in args.b_values:
-            # Ejecuta jaccardLSHbucketing
-            salida_bucketing = ejecutar_programa("jaccardLSHbucketing", "exp1_directory", k, b)
-            if salida_bucketing is not None:
-                # Guarda la salida en el archivo CSV correspondiente
-                guardar_csv([k, b, salida_bucketing], "jaccardLSHbucketing_results.csv")
-                print(f"Salida para jaccardLSHbucketing (k={k}, b={b}): {salida_bucketing}")
+            for t in args.t_values:
+                for s in args.s_values:
+                    # Ejecuta jaccardLSHbucketing
+                    salida_bucketing = ejecutar_programa("jaccardLSHbucketing", "exp1_directory", k, b, t, s)  #k values, b de particiones, t numero funciones de hash, s threshold
+                    if salida_bucketing is not None:
+                        # Guarda la salida en el archivo CSV correspondiente
+                        guardar_csv([k, b, t, s, salida_bucketing], "jaccardLSHbucketing_results.csv")
+                        print(f"Salida para jaccardLSHbucketing (k={k}, b={b}, t={t}, s={s}): {salida_bucketing}")
 
-            # Ejecuta jaccardLSHforest
-            salida_forest = ejecutar_programa("jaccardLSHforest", "exp1_directory", k, b)
-            if salida_forest is not None:
-                # Guarda la salida en el archivo CSV correspondiente
-                guardar_csv([k, b, salida_forest], "jaccardLSHforest_results.csv")
-                print(f"Salida para jaccardLSHforest (k={k}, b={b}): {salida_forest}")
+                    # Ejecuta jaccardLSHforest
+                    salida_forest = ejecutar_programa("jaccardLSHforest", "exp1_directory", k, b, t, s) 
+                    if salida_forest is not None:
+                        # Guarda la salida en el archivo CSV correspondiente
+                        guardar_csv([k, b, t, s, salida_forest], "jaccardLSHforest_results.csv")
+                        print(f"Salida para jaccardLSHforest (k={k}, b={b}, t={t}, s={s}): {salida_forest}")
 
 if __name__ == "__main__":
     main()
