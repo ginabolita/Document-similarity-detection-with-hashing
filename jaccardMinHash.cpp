@@ -11,7 +11,9 @@
 #include <chrono>
 #include <cmath>
 #include <filesystem>
-#include "deps/nlohmann/json.hpp" 
+#include <regex>
+#include "deps/nlohmann/json.hpp"
+
 
 using namespace std;
 using namespace nlohmann;
@@ -23,6 +25,16 @@ vector<pair<int, int>> hashCoefficients; // [a, b] for hashFunction(x) = (ax + b
 int p;                                   // Prime number for hash functions
 unordered_set<string> stopwords;         // Stopwords
 
+
+int extractNumber(const std::string& filename) {
+    std::regex pattern(R"(docExp2_(\d+)\.txt)");
+    std::smatch match;
+    if (std::regex_search(filename, match, pattern)) {
+        return std::stoi(match[1]);
+    }
+    return -1; // Si no se encuentra un número, devuelve -1 o maneja el error como prefieras
+
+}
 
 // StopWordsZone ------------------------------------------------------------------------
 
@@ -315,7 +327,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    std::cout << "Found " << files.size() << " text files in directory" << std::endl;
+    //std::cout << "Found " << files.size() << " text files in directory" << std::endl;
     
     // Initialize hash functions
     initializeHashFunctions();
@@ -326,7 +338,7 @@ int main(int argc, char *argv[])
 
     for (const auto &file : files)
     {
-        std::cout << "Processing file: " << file << std::endl;
+        //std::cout << "Processing file: " << file << std::endl;
         string text = readFile(file);
         
         if (text.empty())
@@ -354,9 +366,9 @@ int main(int argc, char *argv[])
     }
 
     // Compare all pairs of files
-    std::cout << "\nSimilarity Results:\n" << std::endl;
-    std::cout << "File A,File B,Similarity" << std::endl;
-    
+    //std::cout << "\nSimilarity Results:\n" << std::endl;
+    std::cout << "Doc1,Doc2,Sim%" << std::endl;
+   
     for (size_t i = 0; i < signatures.size(); i++)
     {
         for (size_t j = i + 1; j < signatures.size(); j++)
@@ -367,7 +379,10 @@ int main(int argc, char *argv[])
             string fileA = fs::path(signatures[i].first).filename().string();
             string fileB = fs::path(signatures[j].first).filename().string();
             
-            std::cout << fileA << "," << fileB << "," << similarity * 100 << "%" << std::endl;
+            int numA = extractNumber(fileA);
+            int numB = extractNumber(fileB);
+
+            std::cout << numA << "," << numB << "," << similarity * 100 << std::endl;
         }
     }
 
