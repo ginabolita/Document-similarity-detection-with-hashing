@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import random
 import string
 import time
+import copy
 from itertools import combinations
 
 # Create directory structure
@@ -34,6 +35,7 @@ def generate_base_document(min_distinct_words, output_path):
         while len(words) < min_distinct_words:
             #FIXME: mirar k valor random
             #TODO: deberiamos eliminar stopwords antes
+            #TODO: marcel: mejor que sacara las palabras del json o algo
             word = ''.join(random.choices(string.ascii_lowercase, k=random.randint(4, 10)))
             words.add(word)
             f.write(word + ' ')
@@ -146,6 +148,7 @@ def run_one_on_one(executable_path, doc1_path, doc2_path, output_file, k=None, t
             'status': 'success'
         }
     except subprocess.CalledProcessError as e:
+        print(f"error running {executable_path}: {e}")
         logging.error(f"Error running {executable_path}: {e}")
         return {
             'doc1': os.path.basename(doc1_path),
@@ -155,17 +158,24 @@ def run_one_on_one(executable_path, doc1_path, doc2_path, output_file, k=None, t
             'status': 'error'
         }
 
-def run_corpus_mode(executable_path, dataset_path, output_file, k=None, t=None, threshold=None):
+def run_corpus_mode(executable_path, dataset_path, output_file, k=None, t=None, b=None, threshold=None):
     """Run corpus mode experiment"""
-    cmd = [executable_path, dataset_path, output_file]
+    cmd = [executable_path, dataset_path]
     
     # Add parameters if provided
     if k is not None:
         cmd.append(str(k))
+    
     if t is not None:
         cmd.append(str(t))
+
+    if b is not None:
+        cmd.append(str(b))
+
     if threshold is not None:
         cmd.append(str(threshold))
+    
+    cmd.extend([">", output_file])
     
     try:
         start_time = time.time()
@@ -185,6 +195,8 @@ def run_corpus_mode(executable_path, dataset_path, output_file, k=None, t=None, 
             'status': 'success'
         }
     except subprocess.CalledProcessError as e:
+        command = " ".join(cmd)
+        print(f"error running {executable_path}: {e}, try running: {command} ")
         logging.error(f"Error running corpus mode {executable_path}: {e}")
         return {
             'dataset': dataset_path,
@@ -252,7 +264,7 @@ def parse_corpus_output(result):
 #----------------------------------------------------
 # EXPERIMENTOS
 #----------------------------------------------------
-def run_one_on_one_experiment(executables, dataset_dir, output_dir, k_values, t_values):
+def run_one_on_one_experiment(executables, dataset_dir, output_dir, k_values, t_values, b_values):
     """Run one-on-one comparisons for multiple executables"""
     # Get list of documents
     docs = sorted([f for f in os.listdir(dataset_dir) if f.endswith('.txt')])
@@ -309,33 +321,39 @@ def run_one_on_one_experiment(executables, dataset_dir, output_dir, k_values, t_
     
     return df
 
-def run_corpus_experiment(executables, dataset_dir, output_dir, k_values, t_values, threshold_values):
+def run_corpus_experiment(executables, dataset_dir, output_dir, k_values, t_values, b_values, threshold_values):
     """Run corpus mode experiments"""
     results = []
     
     # For each executable
     for exec_name, exec_path in executables.items():
         logging.info(f"Running corpus mode for {exec_name}")
+
+        b_values_filtered = b_values if 'lsh' in exec_name else [None]
+        threshold_values_filtered = threshold_values if exec_name not in ['minhash', 'lsh_basic', 'brute_force'] else [None]
+        t_values_filtered = t_values if exec_name != 'brute_force' else [None]
+
         
         # For each parameter combination
         for k in k_values:
-            for t in t_values:
-                for threshold in threshold_values:
-                    output_file = os.path.join(output_dir, f"{exec_name}_corpus_k{k}_t{t}_th{threshold}.txt")
-                    
-                    # Run the executable
-                    result = run_corpus_mode(exec_path, dataset_dir, output_file, k, t, threshold)
-                    
-                    # Parse the output
-                    parsed_result = parse_corpus_output(result)
-                    
-                    # Add method and parameter info
-                    parsed_result['method'] = exec_name
-                    parsed_result['k'] = k
-                    parsed_result['t'] = t
-                    parsed_result['threshold'] = threshold
-                    
-                    results.append(parsed_result)
+            for t in t_values_filtered:
+                for b in b_values_filtered:
+                    for threshold in threshold_values_filtered:
+                        output_file = os.path.join(output_dir, f"{exec_name}_corpus_k{k}_t{t or 'NA'}_b{b or 'NA'}_th{threshold or 'NA'}.txt")
+                        
+                        # Run the executable
+                        result = run_corpus_mode(exec_path, dataset_dir, output_file, k, t, b, threshold)
+                        
+                        # Parse the output
+                        parsed_result = parse_corpus_output(result)
+                        
+                        # Add method and parameter info
+                        parsed_result['method'] = exec_name
+                        parsed_result['k'] = k
+                        parsed_result['t'] = t
+                        parsed_result['threshold'] = threshold
+                        
+                        results.append(parsed_result)
     
     # Save all results
     df = pd.DataFrame(results)
@@ -585,8 +603,9 @@ def main():
     parser = argparse.ArgumentParser(description='Document Similarity Methods Evaluation')
     parser.add_argument('--mode', choices=['real', 'virtual'], required=True, help='Dataset mode: real or virtual')
     parser.add_argument('--experiment', choices=['one-on-one', 'corpus'], required=True, help='Experiment type: one-on-one or corpus')
-    parser.add_argument('--k_values', nargs='+', type=int, required=True, help='List of k values to test')
-    parser.add_argument('--t_values', nargs='+', type=int, required=True, help='List of t values to test')
+    parser.add_argument('--k_values', nargs='+', type=int, help='List of k values to test', default=[3, 5, 7])
+    parser.add_argument('--t_values', nargs='+', type=int, help='List of t values to test', default=[10, 100, 1000])
+    parser.add_argument('--b_values', nargs='+', type=int, help='List of t values to test', default=[5, 10, 20, 50, 100])
     parser.add_argument('--threshold_values', nargs='+', type=float, default=[0.5, 0.6, 0.7, 0.8, 0.9], help='List of threshold values to test (for corpus mode)')
     parser.add_argument('--num_docs', type=int, default=20, help='Number of documents to generate')
     parser.add_argument('--prepare_datasets', action='store_true', help='Prepare datasets before running experiments')
@@ -619,10 +638,7 @@ def main():
     executables = {
         'brute_force': './executables/jaccardBruteForce',
         'minhash': './executables/jaccardMinHash',
-        'lsh_basic': './executables/jaccardLSHbase'
-    }
-    
-    corpus_executables = {
+        'lsh_basic': './executables/jaccardLSHbase',
         'lsh_bucketing': './executables/jaccardLSHbucketing',
         'lsh_forest': './executables/jaccardLSHforest'
     }
@@ -637,11 +653,12 @@ def main():
 
     if args.experiment == 'one-on-one':
         logging.info("Running one-on-one experiments...")
-        one_on_one_results = run_one_on_one_experiment(executables, dataset_dir, output_dir, args.k_values, args.t_values)
+        one_on_one_results = run_one_on_one_experiment(executables, dataset_dir, output_dir, args.k_values, args.t_values, args.b_values)
         visualize_one_on_one_results(one_on_one_results, output_dir)
     else:  # corpus mode
         logging.info("Running corpus experiments...")
-        corpus_results = run_corpus_experiment(corpus_executables, dataset_dir, output_dir, args.k_values, args.t_values, args.threshold_values)
+        #print(executables, dataset_dir, output_dir, args.k_values, args.t_values, args.b_values, args.threshold_values)
+        corpus_results = run_corpus_experiment(executables, dataset_dir, output_dir, args.k_values, args.t_values, args.b_values, args.threshold_values)
         visualize_corpus_results(corpus_results, output_dir)
 
     # Generate report using the appropriate variables

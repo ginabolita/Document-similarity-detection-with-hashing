@@ -10,14 +10,16 @@
 #include <fstream>
 #include <chrono>
 #include <cmath>
+#include <filesystem>
 #include "deps/nlohmann/json.hpp" 
-
 
 using namespace std;
 using namespace nlohmann;
-unsigned int k;                          // Tamaño de los k-shingles
-const int numHashFunctions = 100;        // Numero de funciones hash para el minhash
-vector<pair<int, int>> hashCoefficients; // [a, b] for funcionhash(x) = (ax + b) % p
+namespace fs = std::filesystem;
+
+unsigned int k;                          // Size of k-shingles
+int numHashFunctions;                    // Number of hash functions for minhash (now configurable)
+vector<pair<int, int>> hashCoefficients; // [a, b] for hashFunction(x) = (ax + b) % p
 int p;                                   // Prime number for hash functions
 unordered_set<string> stopwords;         // Stopwords
 
@@ -55,16 +57,9 @@ unordered_set<string> loadStopwords(const string &filename)
 //-----------------------------------------------------------------------------------------
 
 
-
-
-
-
-
-
-
 //Format Zone ----------------------------------------------------------------------------
 
-// Quita signos de puntuacion y mayusculas
+// Remove punctuation and convert to lowercase
 string normalize(const string &word)
 {
     string result;
@@ -116,14 +111,6 @@ std::string readFile(const std::string &filename)
     return content;
 }
 
-// Function to check if a string is a file path
-bool isFilePath(const string &str)
-{
-    return (str.find(".txt") != string::npos ||
-            str.find(".doc") != string::npos ||
-            str.find(".md") != string::npos);
-}
-
 // Optimized function to find the next prime after n
 int nextPrime(int n)
 {
@@ -162,14 +149,6 @@ int nextPrime(int n)
 //----------------------------------------------------------------------------------------
 
 
-
-
-
-
-
-
-
-
 // Algoritmo Zone ---------------------------------------------------------------------------
 
 // Initialize hash functions with random coefficients
@@ -192,26 +171,25 @@ void initializeHashFunctions()
 // Function to process text and extract k-shingles
 void tratar(const string &texto, unordered_set<string> &kShingles)
 {
-    queue<string> palabras; // cola para tener las k palabras consecutivas
+    queue<string> palabras; // queue to hold k consecutive words
     string word;
     stringstream ss(texto);
 
     while (ss >> word)
-    { // leer palabra del stringstream
-        // quitar singnos de puntuacion y mayusculas
+    {
+        // Remove punctuation and convert to lowercase
         word = normalize(word);
         if (!is_stopword(word))
         {
-            //cout << word << " ";
             if (word.empty())
                 continue; // Skip empty words after normalization
 
             palabras.push(word);
             if (palabras.size() == k)
-            { // si ya tenemos k palabras en la cola tenemos un k shingle!
-                // Optimización: construir el shingle directamente con un string estimado
+            { // If we have k words in the queue, we have a k-shingle!
+                // Optimization: build the shingle directly with an estimated string size
                 string shingle;
-                shingle.reserve(k * 10); // Reservar espacio aproximado
+                shingle.reserve(k * 10); // Reserve approximate space
 
                 queue<string> temp = palabras;
                 for (size_t i = 0; i < k; i++)
@@ -223,7 +201,7 @@ void tratar(const string &texto, unordered_set<string> &kShingles)
                 }
 
                 kShingles.insert(shingle);
-                // Quitamos la primera para avanzar (sliding window approach)
+                // Remove the first word to advance (sliding window approach)
                 palabras.pop();
             }
         }
@@ -258,13 +236,13 @@ vector<int> computeMinHashSignature(const unordered_set<string> &kShingles)
     return signature;
 }
 
-// Ehh bueno da la similaridad de Jaccard evidentemente
+// Calculate Jaccard similarity
 float SimilaridadDeJaccard(const vector<int> &signature1, const vector<int> &signature2)
 {
-    int iguales = 0; // Cambiado a int para optimización
+    int iguales = 0;
 
-    // Cuando 2 minhashes son iguales en una posicion significa que el shingle que se ha
-    // usado para calcular esa posicion es el mismo en los 2 textos
+    // When 2 minhashes are equal at a position, it means the shingle used to calculate
+    // that position is the same in both texts
     for (int i = 0; i < numHashFunctions; i++)
     {
         if (signature1[i] == signature2[i])
@@ -278,7 +256,12 @@ float SimilaridadDeJaccard(const vector<int> &signature1, const vector<int> &sig
 
 //-------------------------------------------------------------------------------------------
 
-
+// Function to check if a file is a text file
+bool isTextFile(const string &filename)
+{
+    string extension = fs::path(filename).extension().string();
+    return (extension == ".txt" || extension == ".doc" || extension == ".md" || extension == ".text");
+}
 
 int main(int argc, char *argv[])
 {
@@ -286,63 +269,107 @@ int main(int argc, char *argv[])
 
     if (argc != 4)
     {
-        std::cout << "Usage: " << argv[0] << " <file1> <file2> <k>" << std::endl;
-        std::cout << "where k is the shingle size" << std::endl;
+        std::cout << "Usage: " << argv[0] << " <directory> <k> <t>" << std::endl;
+        std::cout << "where k is the shingle size and t is the number of hash functions" << std::endl;
         return 1;
     }
 
+    string directory = argv[1];
+    
     // Get k value from command line
-    k = std::stoi(argv[3]);
+    k = std::stoi(argv[2]);
     if (k <= 0)
     {
         std::cerr << "Error: k must be positive" << std::endl;
         return 1;
     }
-
-    // Read input files
-    std::string text1 = readFile(argv[1]);
-    std::string text2 = readFile(argv[2]);
-
-    if (text1.empty() || text2.empty())
+    
+    // Get numHashFunctions value from command line
+    numHashFunctions = std::stoi(argv[3]);
+    if (numHashFunctions <= 0)
     {
-        std::cerr << "Error: One or both input files are empty or could not be read." << std::endl;
+        std::cerr << "Error: Number of hash functions must be positive" << std::endl;
         return 1;
     }
 
+    // Check if directory exists
+    if (!fs::exists(directory) || !fs::is_directory(directory))
+    {
+        std::cerr << "Error: Directory " << directory << " does not exist" << std::endl;
+        return 1;
+    }
+
+    // Collect all text files in the directory
+    vector<string> files;
+    for (const auto &entry : fs::directory_iterator(directory))
+    {
+        if (entry.is_regular_file() && isTextFile(entry.path().string()))
+        {
+            files.push_back(entry.path().string());
+        }
+    }
+
+    if (files.empty())
+    {
+        std::cerr << "Error: No text files found in directory " << directory << std::endl;
+        return 1;
+    }
+
+    std::cout << "Found " << files.size() << " text files in directory" << std::endl;
+    
     // Initialize hash functions
     initializeHashFunctions();
 
-    // Process texts and extract k-shingles
-    unordered_set<string> KT1, KT2;
+    // Process each file and compute MinHash signatures
+    vector<pair<string, vector<int>>> signatures;
+    vector<pair<string, unordered_set<string>>> shingleSets;
 
-    // Reserve space for estimated number of shingles
-    size_t estimatedSize1 = max(1UL, (unsigned long)text1.length() / 10);
-    size_t estimatedSize2 = max(1UL, (unsigned long)text2.length() / 10);
-    KT1.reserve(estimatedSize1);
-    KT2.reserve(estimatedSize2);
-
-    // Extract shingles
-    tratar(text1, KT1);
-    tratar(text2, KT2);
-
-    // Early exit if either set is empty
-    if (KT1.empty() || KT2.empty())
+    for (const auto &file : files)
     {
-        cout << "Error: No se pudieron extraer k-shingles de los textos. Verifica que los textos tengan al menos " << k << " palabras." << endl;
-        return 1;
+        std::cout << "Processing file: " << file << std::endl;
+        string text = readFile(file);
+        
+        if (text.empty())
+        {
+            std::cerr << "Warning: File " << file << " is empty or could not be read. Skipping." << std::endl;
+            continue;
+        }
+        
+        unordered_set<string> kShingles;
+        size_t estimatedSize = max(1UL, (unsigned long)text.length() / 10);
+        kShingles.reserve(estimatedSize);
+        
+        tratar(text, kShingles);
+        
+        if (kShingles.empty())
+        {
+            std::cerr << "Warning: No k-shingles could be extracted from file " << file 
+                      << ". Make sure the file has at least " << k << " words. Skipping." << std::endl;
+            continue;
+        }
+        
+        vector<int> signature = computeMinHashSignature(kShingles);
+        signatures.push_back({file, signature});
+        shingleSets.push_back({file, kShingles});
     }
 
-    // Compute MinHash signatures
-    vector<int> signature1 = computeMinHashSignature(KT1);
-    vector<int> signature2 = computeMinHashSignature(KT2);
-
-    // Calculate and output similarity
-    float similarity = SimilaridadDeJaccard(signature1, signature2);
-    cout << "Min Hash Jaccard Similarity : " << similarity * 100 << "%" << endl;
-
-    // Additional statistics
-    //cout << "Número de k-shingles en texto 1: " << KT1.size() << endl;
-    //cout << "Número de k-shingles en texto 2: " << KT2.size() << endl;
+    // Compare all pairs of files
+    std::cout << "\nSimilarity Results:\n" << std::endl;
+    std::cout << "File A,File B,Similarity" << std::endl;
+    
+    for (size_t i = 0; i < signatures.size(); i++)
+    {
+        for (size_t j = i + 1; j < signatures.size(); j++)
+        {
+            float similarity = SimilaridadDeJaccard(signatures[i].second, signatures[j].second);
+            
+            // Get just the filenames without the full path for better readability
+            string fileA = fs::path(signatures[i].first).filename().string();
+            string fileB = fs::path(signatures[j].first).filename().string();
+            
+            std::cout << fileA << "," << fileB << "," << similarity * 100 << "%" << std::endl;
+        }
+    }
 
     return 0;
 }
