@@ -25,7 +25,6 @@ int p;                                   // Prime number for hash functions
 unordered_set<string> stopwords;         // Stopwords
 vector<vector<float>> Data;
 
-
 //---------------------------------------------------------------------------
 // Treating StopWords
 // --------------------------------------------------------------------------
@@ -302,36 +301,44 @@ struct SimilarityResult
   bool isSimilar;
 };
 
-
-void writeCSV(const string& filename, vector<vector<float>>& data) {
+void writeCSV(const string &filename, vector<vector<float>> &data)
+{
   // Check if the filename already ends with ".csv"
   string fileWithCSV = filename;
-  if (fileWithCSV.substr(fileWithCSV.size() - 4) != ".csv") {
-      fileWithCSV += ".csv";  // Add ".csv" if not present
+  if (fileWithCSV.substr(fileWithCSV.size() - 4) != ".csv")
+  {
+    fileWithCSV += ".csv"; // Add ".csv" if not present
   }
 
   // Create and open a file
   ofstream file(fileWithCSV);
-  if (data.empty()) {
-      cerr << "No data to write to CSV." << endl;
-      return;
+  if (data.empty())
+  {
+    cerr << "No data to write to CSV." << endl;
+    return;
   }
 
-  if (file.is_open()) {
-      // Loop through data and write it to the CSV file
-      for (const auto& row : data) {
-          for (size_t i = 0; i < row.size(); ++i) {
-              file << row[i];
-              if (i < row.size() - 1) {
-                  file << ",";  // Add comma separator
-              }
-          }
-          file << "\n";  // Newline after each row
+  if (file.is_open())
+  {
+    // Loop through data and write it to the CSV file
+    for (const auto &row : data)
+    {
+      for (size_t i = 0; i < row.size(); ++i)
+      {
+        file << row[i];
+        if (i < row.size() - 1)
+        {
+          file << ","; // Add comma separator
+        }
       }
-      file.close();  // Close the file when done
-      cout << "CSV file created successfully: " << fileWithCSV << endl;
-  } else {
-      cerr << "Unable to open file: " << fileWithCSV << endl;
+      file << "\n"; // Newline after each row
+    }
+    file.close(); // Close the file when done
+    cout << "CSV file created successfully: " << fileWithCSV << endl;
+  }
+  else
+  {
+    cerr << "Unable to open file: " << fileWithCSV << endl;
   }
 }
 
@@ -340,6 +347,7 @@ void writeCSV(const string& filename, vector<vector<float>>& data) {
 //---------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
+  auto startTime = chrono::high_resolution_clock::now();
   stopwords = loadStopwords("stopwords-en.json");
 
   if (argc != 5)
@@ -510,12 +518,11 @@ int main(int argc, char *argv[])
   // cout << "\nAll comparisons:" << endl;
   for (const auto &result : results)
   {
-     //cout << "Files: " << fs::path(result.file1).filename().string() << " and "
-     //     << fs::path(result.file2).filename().string() << endl;
-     //cout << "  Jaccard similarity: " << result.similarity * 100 << "%" << endl;
-     //cout << "  Similar: " << (result.isSimilar ? "Yes" : "No") << endl;
+    // cout << "Files: " << fs::path(result.file1).filename().string() << " and "
+    //      << fs::path(result.file2).filename().string() << endl;
+    // cout << "  Jaccard similarity: " << result.similarity * 100 << "%" << endl;
+    // cout << "  Similar: " << (result.isSimilar ? "Yes" : "No") << endl;
 
-    
     string d1 = fs::path(result.file1).filename().string();
     string d2 = fs::path(result.file2).filename().string();
 
@@ -532,15 +539,19 @@ int main(int argc, char *argv[])
     else
       d2 = d2[8];
 
-      /*
-    vector<float> DataToPass = {
-        static_cast<float>(std::stoi(d1)),
-        static_cast<float>(std::stoi(d2)),
-        result.similarity,
-        static_cast<float>(result.isSimilar)};*/
+    /*
+  vector<float> DataToPass = {
+      static_cast<float>(std::stoi(d1)),
+      static_cast<float>(std::stoi(d2)),
+      result.similarity,
+      static_cast<float>(result.isSimilar)};*/
     cout << static_cast<float>(std::stoi(d1)) << "," << static_cast<float>(std::stoi(d2)) << "," << result.similarity << "," << static_cast<float>(result.isSimilar) << endl;
-    //Data.push_back(DataToPass);
-    
+    // Data.push_back(DataToPass);
   }
-  //writeCSV("JaccardLSHresults", Data);
+  // writeCSV("JaccardLSHresults", Data);
+
+  // Calculate and display total execution time
+  auto endTime = chrono::high_resolution_clock::now();
+  auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime);
+  cout << "time: " << duration.count() << " ms" << endl;
 }
