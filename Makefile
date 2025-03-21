@@ -1,6 +1,6 @@
 # Detect a modern compiler (use g++-13 if available, otherwise fallback to g++)
 CXX := $(shell command -v g++-13 >/dev/null 2>&1 && echo g++-13 || echo g++)
-FLAGS = -O3 -Wall -std=c++17
+FLAGS = -O3 -std=c++17
 INCLUDE = -Inlohmann -Ixxhash
 LIBS = deps/xxhash/libxxhash.a
 
