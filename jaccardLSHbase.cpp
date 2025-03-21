@@ -532,13 +532,15 @@ int main(int argc, char *argv[])
     else
       d2 = d2[8];
 
+      /*
     vector<float> DataToPass = {
         static_cast<float>(std::stoi(d1)),
         static_cast<float>(std::stoi(d2)),
         result.similarity,
-        static_cast<float>(result.isSimilar)};
-    Data.push_back(DataToPass);
+        static_cast<float>(result.isSimilar)};*/
+    cout << static_cast<float>(std::stoi(d1)) << "," << static_cast<float>(std::stoi(d2)) << "," << result.similarity << "," << static_cast<float>(result.isSimilar) << endl;
+    //Data.push_back(DataToPass);
     
   }
-  writeCSV("JaccardLSHresults", Data);
+  //writeCSV("JaccardLSHresults", Data);
 }
