@@ -1,26 +1,29 @@
 #include <algorithm>
-#include <cmath>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <random>
-#include <set>
 #include <sstream>
 #include <string>
 #include <unordered_set>
 #include <vector>
 
 #include "deps/nlohmann/json.hpp"
+
 using namespace std;
-using namespace nlohmann;
-typedef unsigned int uint;
+using json = nlohmann::json;
+
 unordered_set<string> stopwords;
 
-unsigned int k, D;
-
-// Treating StopWords
-bool is_stopword(const string& word) {
+/* bool is_stopword(const string& word) {
   return stopwords.find(word) != stopwords.end();
+} */
+
+bool is_stopword(const string& word) {
+  string lowerWord = word;
+  transform(lowerWord.begin(), lowerWord.end(), lowerWord.begin(), ::tolower);
+  return stopwords.find(lowerWord) != stopwords.end();
 }
 
 unordered_set<string> loadStopwords(const string& filename) {
@@ -41,103 +44,106 @@ unordered_set<string> loadStopwords(const string& filename) {
   return stopwords;
 }
 
-// Treating Format
-string normalize(const string& word) {
-  string result;
-  result.reserve(word.length());
-  for (char c : word) {
-    if (isalpha(c)) {
-      result += tolower(c);
-    }
-  }
-  return result;
-}
-
-// Count unique words in text (excluding stopwords)
-int countUniqueWords(const string& text) {
-  unordered_set<string> uniqueWords;
+// Function to tokenize text into words
+vector<string> tokenizeWords(const string& text) {
+  vector<string> words;
   stringstream ss(text);
   string word;
 
+  // Extract individual words
   while (ss >> word) {
-    string normalizedWord = normalize(word);
-    if (!normalizedWord.empty() && !is_stopword(normalizedWord)) {
-      uniqueWords.insert(normalizedWord);
+    // Remove punctuation from end of words if needed
+    if (!word.empty() && ispunct(word.back())) {
+      word.pop_back();
     }
+
+    /*     if (!word.empty() && !is_stopword(word)) {
+          words.push_back(word);
+        } */
+
+    // Convert to lowercase and check if it's a stopword
+    string lowerWord = word;
+    transform(lowerWord.begin(), lowerWord.end(), lowerWord.begin(), ::tolower);
+
+    if (!lowerWord.empty() && !is_stopword(lowerWord)) {
+      words.push_back(lowerWord);  // Store lowercase version for consistency
+    }
+  }
+  return words;
+}
+
+// Function to count unique words in text
+/* int countUniqueWords(const vector<string>& words) {
+  unordered_set<string> uniqueWords;
+
+  for (const string& word : words) {
+    // Convert to lowercase for counting unique words
+    string lowerWord = word;
+    transform(lowerWord.begin(), lowerWord.end(), lowerWord.begin(), ::tolower);
+    uniqueWords.insert(lowerWord);
+  }
+
+  return uniqueWords.size();
+}
+ */
+
+// Function to count unique words in text (excluding stopwords)
+int countUniqueWords(const vector<string>& words) {
+  unordered_set<string> uniqueWords;
+
+  for (const string& word : words) {
+    uniqueWords.insert(word);  // Words are already lowercase and filtered
   }
 
   return uniqueWords.size();
 }
 
-unordered_set<string> generateShingles(const string& text) {
-  unordered_set<string> shingles;
-  vector<string> words;
-  stringstream ss(text);
-  string word;
+// Function to generate random permutations of words
+vector<string> permutabasicText(const vector<string>& words,
+                                int numpermutaciones) {
+  vector<string> permutaciones;
 
-  // Tokenize the text into words
-  while (ss >> word) {
-    // Consider if it's a stopword
-    if (!is_stopword(normalize(word))) {
-      words.push_back(normalize(word));
-    }
-  }
+  // Create a proper random generator
+  random_device rd;
+  mt19937 gen(rd());
 
-  // Generate k-word shingles
-  if (words.size() >= k) {
-    for (size_t i = 0; i <= words.size() - k; i++) {
-      string shingle;
-      for (size_t j = 0; j < k; j++) {
-        if (j > 0) shingle += " ";  // Separate words with a space
-        shingle += words[i + j];
+  for (int i = 0; i < numpermutaciones; ++i) {
+    vector<string> temp = words;  // Create a copy for each permutation
+    shuffle(temp.begin(), temp.end(), gen);  // Shuffle the words
+
+    // Combine shuffled words into a document
+    stringstream shuffledText;
+    for (size_t j = 0; j < temp.size(); ++j) {
+      shuffledText << temp[j];
+
+      // Add space between words, and occasionally add periods to create
+      // sentences
+      if (j < temp.size() - 1) {
+        shuffledText << " ";
+        // Randomly add periods to create sentence structure (approx every 8-12
+        // words)
+        if (rand() % 10 == 0) {
+          shuffledText << ". ";
+        }
       }
-      shingles.insert(shingle);
     }
+
+    // Ensure the document ends with a period
+    if (shuffledText.str().back() != '.') {
+      shuffledText << ".";
+    }
+
+    permutaciones.push_back(shuffledText.str());
   }
 
-  cout << "Total k-shingles generated: " << shingles.size() << endl;
-  return shingles;
+  return permutaciones;
 }
 
-// Calculate expected similarity based on formula
-double calculateExpectedSimilarity(int ni, int nj, int n) {
-  double pi = static_cast<double>(ni) / n;
-  double pj = static_cast<double>(nj) / n;
-  return (pi * pj) / (pi + pj - pi * pj);
-}
-
-vector<string> selectQuantity(const unordered_set<string>& shingles,
-                              int quantity) {
-  vector<string> selectedShingles;
-  vector<string> shinglesVec(shingles.begin(), shingles.end());
-  random_device rd;
-  mt19937 gen(rd());
-  shuffle(shinglesVec.begin(), shinglesVec.end(), gen);
-
-  selectedShingles.reserve(quantity);
-  for (int i = 0; i < quantity && i < shinglesVec.size(); ++i) {
-    selectedShingles.push_back(shinglesVec[i]);
-  }
-
-  return selectedShingles;
-}
-
-void generaDocumentos(const unordered_set<string>& shingles,
-                      const string& path) {
-  vector<int> shingleCounts;  // Store counts for similarity calculation
-  int totalShingles = shingles.size();
-  random_device rd;
-  mt19937 gen(rd());
-
-  // Define a reasonable range based on total shingles available
-  int minShingles = max(10, totalShingles / 10);  // At least 10 or 10% of total
-  int maxShingles =
-      min(totalShingles * 8 / 10, totalShingles - 1);  // At most 80% of total
-  uniform_int_distribution<> dis(minShingles, maxShingles);
-
-  for (int i = 0; i < D; ++i) {
-    // Create a unique filename for each document
-    string filename = path + "/docExp2_" + to_string(i + 1) + ".txt";
+// Function to generate .txt documents
+void generaDocumentos(const vector<string>& permutaciones, const string& path) {
+  for (int i = 0; i < permutaciones.size(); ++i) {
+    // Create a unique filename for each permutation
+    string filename = path + "/docExp1_" + to_string(i + 1) + ".txt";
 
     // Open file in write mode
     ofstream file(filename);
@@ -146,50 +152,11 @@ void generaDocumentos(const unordered_set<string>& shingles,
       continue;
     }
 
-    // Random quantity between minShingles and maxShingles
-    int randQuantity = dis(gen);
-    vector<string> selectedShingles = selectQuantity(shingles, randQuantity);
-    shingleCounts.push_back(randQuantity);
-
-    // Write selected shingles to file
-    for (const string& shingle : selectedShingles) {
-      file << shingle << endl;
-    }
+    // Write the permutation to the file
+    file << permutaciones[i];
     file.close();
-    cout << "Generated file: " << filename << " with " << randQuantity
-         << " shingles" << endl;
-  }
 
-  // Generate similarity matrix report
-  ofstream simMatrix(path + "/similarity_matrix.txt");
-  if (simMatrix.is_open()) {
-    simMatrix << "Expected Similarity Matrix between documents:" << endl;
-    simMatrix << "Total k-shingles in base set: " << totalShingles << endl
-              << endl;
-
-    // Create a table header
-    simMatrix << "Doc\t";
-    for (int i = 0; i < D; ++i) {
-      simMatrix << "Doc" << i + 1 << "\t";
-    }
-    simMatrix << endl;
-
-    // Create similarity matrix
-    for (int i = 0; i < D; ++i) {
-      simMatrix << "Doc" << i + 1 << "\t";
-      for (int j = 0; j < D; ++j) {
-        if (i == j) {
-          simMatrix << "1.000\t";  // Self-similarity is 1
-        } else {
-          double similarity = calculateExpectedSimilarity(
-              shingleCounts[i], shingleCounts[j], totalShingles);
-          simMatrix << fixed << setprecision(3) << similarity << "\t";
-        }
-      }
-      simMatrix << endl;
-    }
-    simMatrix.close();
-    cout << "Generated similarity matrix" << endl;
+    cout << "Generated file: " << filename << endl;
   }
 }
 
@@ -211,61 +178,58 @@ bool makeDirectory(const std::string& path) {
 
 int main(int argc, char* argv[]) {
   stopwords = loadStopwords("stopwords-en.json");
-  if (argc != 3) {
-    cout << "Usage: " << argv[0] << " <k> <D>" << endl;
-    cout << "where k is the shingle size" << endl;
+  if (argc != 2) {
+    cout << "Usage: " << argv[0] << " <D>" << endl;
     cout << "where D is the number of documents to generate" << endl;
     return 1;
   }
-
-  // Get k value from command line
-  k = stoi(argv[1]);
-  if (k <= 0) {
-    cerr << "Error: k must be positive" << endl;
-    return 1;
-  }
-
-  D = stoi(argv[2]);
+  int D = stoi(argv[1]);
   if (D < 20) {
     cerr << "Error: D must be at least 20 according to requirements" << endl;
     return 1;
   }
 
+  // Open and parse JSON file
   ifstream file("basicText.json");
   if (!file.is_open()) {
     cerr << "Error: Could not open JSON file." << endl;
     return 1;
   }
 
-  // Parse JSON
   json jsonData;
   file >> jsonData;
   file.close();
 
-  if (jsonData["experimento_2"]["basicText"].is_null()) {
+  if (jsonData["experimento_1"]["basicText"].is_null()) {
     cerr << "Error: basicText is null in the JSON file." << endl;
     return 1;
   }
 
-  string basicText = jsonData["experimento_2"]["basicText"];
+  string basicText = jsonData["experimento_1"]["basicText"];
 
-  // Check if base text has at least 100 different words
-  int uniqueWordCount = countUniqueWords(basicText);
-  if (uniqueWordCount < 100) {
-    cerr << "Error: Base text for experiment 2 must contain at least 100 "
-            "different words. Current count: "
+  // Tokenize the text into words
+  vector<string> words = tokenizeWords(basicText);
+
+  // Check if base text has at least 50 different words
+  int uniqueWordCount = countUniqueWords(words);
+  if (uniqueWordCount < 50) {
+    cerr << "Error: Base text must contain at least 50 different words. "
+            "Current count: "
          << uniqueWordCount << endl;
     return 1;
   }
 
-  cout << "Base text contains " << uniqueWordCount << " unique words." << endl;
+  cout << "Base text contains " << words.size() << " total words and "
+       << uniqueWordCount << " unique words." << endl;
 
-  unordered_set<string> shingles = generateShingles(basicText);
-  string path = "datasets/virtual/";
+  // Generate permutations at word level
+  vector<string> permutaciones = permutabasicText(words, D);
+
+  string path = "datasets/real/";
   // Create folder
   makeDirectory(path);
 
-  generaDocumentos(shingles, path);
+  generaDocumentos(permutaciones, path);
 
   return 0;
 }
