@@ -221,10 +221,16 @@ def run_corpus_experiment(bin, dataset_dir, output_dir, k_values,
         ] else [None]
         t_values_filtered = t_values if exec_name != 'brute_force' else [None]
 
+        print(f"b_values_filtered: {b_values_filtered}")
+        print(f"thr_values_filtered: {thr_values_filtered}")
+        print(f"t_values_filtered: {t_values_filtered}")
+
         # For each parameter combination
         for k in k_values:
             for t in t_values_filtered:
                 for b in b_values_filtered:
+                    if b is not None:
+                        b = int(t * (b / 100.0))  # Convert percentage to value
                     for thr in thr_values_filtered:
                         # Run the executable
                         result = run_corpus_mode(exec_path, dataset_dir,
@@ -244,7 +250,7 @@ def run_corpus_experiment(bin, dataset_dir, output_dir, k_values,
 
     return df
 
-
+# TODO: aquí metemos las visualizaciones (ahora está mal)
 def visualize_corpus_results(results_df, output_dir):
     """Create visualizations for corpus experiment results"""
     # Plot index build time vs k
@@ -572,25 +578,25 @@ def main():
                         nargs='+',
                         type=int,
                         help='List of k values to test',
-                        default=[3, 5, 7])
+                        default=list(range(1, 15))) # 1, 2, ..., 14
     parser.add_argument('--t_values',
                         nargs='+',
                         type=int,
                         help='List of t values to test',
-                        default=[10, 100, 1000])
+                        default=list(range(100, 1001, 100)))   # 100, 200, ..., 1000
     parser.add_argument('--b_values',
                         nargs='+',
                         type=int,
-                        help='List of b values to test',
-                        default=[5, 10, 20, 50, 100])
+                        help='List of b values to test THEY WILL BE PERCENTAGES OF T',
+                        default=list(range(1, 101, 10)))    # 1, 11, ..., 91
     parser.add_argument('--thr_values',
                         nargs='+',
                         type=float,
-                        default=[0.5, 0.6, 0.7, 0.8, 0.9],
+                        default= [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
                         help='List of thr values to test')
     parser.add_argument('--num_docs',
                         type=int,
-                        default=20,
+                        default=300,
                         help='Number of documents to generate')
     parser.add_argument('--prepare_datasets',
                         action='store_true',
