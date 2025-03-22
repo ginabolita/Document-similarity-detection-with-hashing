@@ -61,24 +61,34 @@ vector<LSHForestNode *> lshForest;
 //---------------------------------------------------------------------------
 // Performance Measurement <- Marcel, el timer para y mide el tiempo automaticamente cuando se destruye
 //---------------------------------------------------------------------------
+// Timer class to measure execution time
 class Timer
 {
 private:
-	chrono::high_resolution_clock::time_point startTime;
-	string operationName;
+  chrono::high_resolution_clock::time_point startTime;
+  string operationName;
 
 public:
-	Timer(const string &name) : operationName(name)
-	{
-		startTime = chrono::high_resolution_clock::now();
-	}
+  Timer(const string &name) : operationName(name)
+  {
+    startTime = chrono::high_resolution_clock::now();
+  }
 
-	~Timer()
-	{
-		auto endTime = chrono::high_resolution_clock::now();
-		auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();
-		timeResults[operationName] = duration;
-	}
+  ~Timer()
+  {
+    auto endTime = chrono::high_resolution_clock::now();
+    auto duration =
+        chrono::duration_cast<chrono::milliseconds>(endTime - startTime)
+            .count();
+    if (timeResults.count(operationName) == 0)
+    {
+      timeResults[operationName] = duration;
+    }
+    else
+    {
+      timeResults[operationName] += duration;
+    }
+  }
 };
 
 // extractNumber function to extract document number from filename
@@ -607,12 +617,12 @@ void printUsage(const char *programName)
 {
 	cout << "Usage options:" << endl;
 	cout << "1. Compare all files in corpus: " << programName
-		 << " <corpus_dir> <k> <b> <t> <sim_threshold>" << endl;
+		 << " <corpus_dir> <k> <t> <b> <sim_threshold>" << endl;
 	cout << "where:" << endl;
 	cout << "  <corpus_dir>: Directory containing text files to compare" << endl;
 	cout << "  <k>: Shingle size (number of consecutive words)" << endl;
-	cout << "  <b>: Number of bands for LSH" << endl;
 	cout << "  <t>: Number of hash functions" << endl;
+	cout << "  <b>: Number of bands for LSH" << endl;
 	cout << "  <sim_threshold>: Similarity threshold (0.0 to 1.0)" << endl;
 }
 
@@ -669,19 +679,19 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		// Get b value from command line
-		int b = stoi(argv[2 + paramOffset]);
-		if (b <= 0)
-		{
-			cerr << "Error: b must be positive" << endl;
-			return 1;
-		}
-
 		// Get t value from command line
-		t = stoi(argv[3 + paramOffset]);
+		t = stoi(argv[2 + paramOffset]);
 		if (t <= 0)
 		{
 			cerr << "Error: t must be positive" << endl;
+			return 1;
+		}
+		
+		// Get b value from command line
+		int b = stoi(argv[3 + paramOffset]);
+		if (b <= 0)
+		{
+			cerr << "Error: b must be positive" << endl;
 			return 1;
 		}
 
@@ -706,7 +716,7 @@ int main(int argc, char *argv[])
 
 		// bloque de codigo para que al finalizar se destruya el timer (y mida el tiempo automaticamente)
 		{ // Initialize hash functions
-			Timer timerInit("Initialize hash functions");
+			Timer timerInit("index build");
 			initializeHashFunctions();
 		}
 
@@ -717,7 +727,7 @@ int main(int argc, char *argv[])
 		cout << "doc1 | doc2 | estimated_similarity" << endl;
 		// Process all files in corpus directory
 		{
-			Timer timerProcessCorpus("Processing corpus");
+			Timer timerProcessCorpus("index build");
 			// cout << "Processing files in directory: " << path1 << endl;
 
 			for (const auto &entry : filesystem::directory_iterator(path1))
@@ -746,7 +756,7 @@ int main(int argc, char *argv[])
 
 		{
 			// Add documents to LSH forest
-			Timer timerLSH("LSH Forest insertion");
+			Timer timerLSH("index build");
 			for (size_t i = 0; i < documents.size(); i++)
 			{
 				insertIntoLSHForest(documents[i].signature, i, b);
@@ -755,7 +765,7 @@ int main(int argc, char *argv[])
 
 		{
 			// Find similar document pairs
-			Timer timerFindSimilar("Finding similar documents");
+			Timer timerFindSimilar("query");
 			similarPairs = queryLSHForest(documents, b);
 		}
 
@@ -773,8 +783,8 @@ int main(int argc, char *argv[])
 		// Construct filename using a stringstream
 		std::stringstream ss;
 		ss << "results/" << category << "/forest/forestSimilarities_k" << k
-		<< "_b" << b
 		<< "_t" << t
+		<< "_b" << b
 		   << "_threshold" << SIMILARITY_THRESHOLD << ".csv";
 
 		filename1 = ss.str();
@@ -782,8 +792,8 @@ int main(int argc, char *argv[])
 		// Generate the second filename with the same structure (e.g., for time measurements)
 		std::stringstream ss2;
 		ss2 << "results/" << category << "/forest/forestTimes_k" << k
-		<< "_b" << b
 		<< "_t" << t
+		<< "_b" << b
 			<< "_threshold" << SIMILARITY_THRESHOLD << ".csv";
 
 		filename2 = ss2.str();

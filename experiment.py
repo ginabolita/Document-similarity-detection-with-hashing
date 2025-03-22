@@ -39,17 +39,15 @@ def run_corpus_mode(executable_path,
                     thr=None):
     """Run corpus mode experiment"""
     cmd = [executable_path, dataset_path]
-
-    print(f"Running {executable_path} on {dataset_path} with k={k},  b={b}, t={t}, thr={thr}")
     
     # Generate base filename parts based on provided parameters
     param_parts = []
     if k is not None:
         param_parts.append(f"k{k}")
-    if b is not None:
-        param_parts.append(f"b{b}")
     if t is not None:
         param_parts.append(f"t{t}")
+    if b is not None:
+        param_parts.append(f"b{b}")
     if thr is not None:
         param_parts.append(f"threshold{thr}")
     
@@ -69,6 +67,7 @@ def run_corpus_mode(executable_path,
 
     # Handle specific parameter requirements for LSH bucketing and forest
     if 'LSHbucketing' in executable_path or 'LSHforest' in executable_path:
+        logging.info("entra en if")
         if k is None or t is None or b is None or thr is None:
             logging.error(
                 f"Error: {executable_path} requires k, t, b, and thr parameters."
@@ -79,18 +78,16 @@ def run_corpus_mode(executable_path,
                 'runtime': None,
                 'status': 'error'
             }
-        # Add parameters in the required order
-        cmd.extend([str(k), str(b)])
-    else:
-        # Add parameters if provided for other executables
-        if k is not None:
-            cmd.append(str(k))
-        if t is not None:
-            cmd.append(str(t))
-        if b is not None:
-            cmd.append(str(b))
-        if thr is not None:
-            cmd.append(str(thr))
+
+    # Add parameters if provided for other executables
+    if k is not None:
+        cmd.append(str(k))
+    if t is not None:
+        cmd.append(str(t))
+    if b is not None:
+        cmd.append(str(b))
+    if thr is not None:
+        cmd.append(str(thr))
 
     try:
         start_time = time.time()
@@ -197,6 +194,8 @@ def parse_csv_results(result):
                             index_build_time = float(time_value)
                         elif "query" in task.lower() and time_value is not None:
                             query_time = float(time_value)
+                        elif "time" in task.lower() and time_value is not None:
+                            total_runtime = float(time_value)
                     else:
                         logging.error(f"Invalid task name in times CSV: {task}")
             else:
@@ -211,7 +210,7 @@ def parse_csv_results(result):
         'similar_pairs': similar_pairs,
         'index_build_time': index_build_time,
         'query_time': query_time,
-        'total_runtime': result['runtime'],
+        'total_runtime': total_runtime,
         'status': result['status'],
         'method': result['method'],
         'k': result['k'],
@@ -222,7 +221,7 @@ def parse_csv_results(result):
 
 
 def run_parameter_experiment(bin, dataset_dir, output_dir, param_to_vary, 
-                            base_k=5, base_t=500, base_b=50, base_thr=0.5):
+                            base_k=5, base_t=500, base_b=50, base_thr=0.3):
     """Run experiments varying one parameter while fixing others"""
     results = []
     
@@ -421,6 +420,7 @@ def main():
                                 args.base_k, args.base_t, args.base_b, args.base_thr)
 
     logging.info("Experiments completed successfully.")
+
 
 
 if __name__ == "__main__":

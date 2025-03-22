@@ -57,22 +57,32 @@ vector<BandBuckets> bandBucketMap;
 // Performance Measurement <- Marcel, el timer para y mide el tiempo
 // automaticamente cuando se destruye
 //---------------------------------------------------------------------------
-class Timer {
- private:
+class Timer
+{
+private:
   chrono::high_resolution_clock::time_point startTime;
   string operationName;
 
- public:
-  Timer(const string &name) : operationName(name) {
+public:
+  Timer(const string &name) : operationName(name)
+  {
     startTime = chrono::high_resolution_clock::now();
   }
 
-  ~Timer() {
+  ~Timer()
+  {
     auto endTime = chrono::high_resolution_clock::now();
     auto duration =
         chrono::duration_cast<chrono::milliseconds>(endTime - startTime)
             .count();
-    timeResults[operationName] = duration;
+    if (timeResults.count(operationName) == 0)
+    {
+      timeResults[operationName] = duration;
+    }
+    else
+    {
+      timeResults[operationName] += duration;
+    }
   }
 };
 
@@ -631,12 +641,12 @@ std::string determineCategory(const std::string &inputDirectory)
 void printUsage(const char *programName) {
   cout << "Usage options:" << endl;
   cout << "1. Compare all files in corpus: " << programName
-       << " <corpus_dir> <k> <b> <t> <sim_threshold>" << endl;
+       << " <corpus_dir> <k> <t> <b> <sim_threshold>" << endl;
   cout << "where:" << endl;
   cout << "  <corpus_dir>: Directory containing text files to compare" << endl;
   cout << "  <k>: Shingle size (number of consecutive words)" << endl;
-  cout << "  <b>: Number of bands for LSH" << endl;
   cout << "  <t>: Number of hash functions" << endl;
+  cout << "  <b>: Number of bands for LSH" << endl;
   cout << "  <sim_threshold>: Similarity threshold (0.0 to 1.0)" << endl;
 }
 
@@ -656,8 +666,8 @@ int main(int argc, char *argv[]) {
   // Parse parameters
   string corpusDir = argv[1];
   k = stoi(argv[2]);                     // Shingle size
-  int b = stoi(argv[3]);                 // Number of bands
-  t = stoi(argv[4]);                     // Number of hash functions
+  t = stoi(argv[3]);                     // Number of hash functions
+  int b = stoi(argv[4]);                 // Number of bands
   SIMILARITY_THRESHOLD = stof(argv[5]);  // Similarity threshold
 
   // Validate inputs
@@ -691,15 +701,17 @@ int main(int argc, char *argv[]) {
   }
 
   // Initialize hash functions - THIS WAS MISSING IN THE ORIGINAL CODE
-  //cout << "Initializing hash functions..." << endl;
-  initializeHashFunctions();
+  {
+    Timer timerHash("index build");
+    initializeHashFunctions();
+  }
   //cout << "Initialized " << hashCoefficients.size() << " hash functions"
    //    << endl;
 
   // Process all files in the corpus directory
   
   {
-    Timer timerProcessCorpus("Processing corpus");
+    Timer timerProcessCorpus("index build");
     //cout << "Processing files in directory: " << corpusDir << endl;
 
     // Count how many files we'll process
@@ -759,13 +771,13 @@ int main(int argc, char *argv[]) {
 
   // Initialize LSH buckets
   {
-    Timer timerInitBuckets("Initializing LSH buckets");
+    Timer timerInitBuckets("index build");
     initializeLSHBuckets(b);
   }
 
   // Add documents to LSH buckets
   {
-    Timer timerLSH("LSH Bucketing");
+    Timer timerLSH("query");
     for (size_t i = 0; i < documents.size(); i++) {
       addToLSHBuckets(documents[i].signature, i, b);
     }
@@ -787,8 +799,8 @@ int main(int argc, char *argv[]) {
 
  std::stringstream ss;
  ss << "results/" << category << "/bucketing/bucketingSimilarities_k" << k
- << "_b" << b
  << "_t" << t
+ << "_b" << b
     << "_threshold" << SIMILARITY_THRESHOLD << ".csv";
 
  filename1 = ss.str();
@@ -796,8 +808,8 @@ int main(int argc, char *argv[]) {
  // Generate the second filename with the same structure (e.g., for time measurements)
  std::stringstream ss2;
  ss2 << "results/" << category << "/bucketing/bucketingTimes_k" << k
- << "_b" << b
  << "_t" << t
+ << "_b" << b
    << "_threshold" << SIMILARITY_THRESHOLD << ".csv";
 
  filename2 = ss2.str();
