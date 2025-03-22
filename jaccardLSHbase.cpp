@@ -429,168 +429,181 @@ bool LSH(const vector<int> &signature1, const vector<int> &signature2,
   return false;
 }
 
-
-
 //---------------------------------------------------------------------------
 // Main
 //---------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
-  auto startTime = chrono::high_resolution_clock::now();
-  stopwords = loadStopwords("stopwords-en.json");
 
-  if (argc != 5)
-  {
-    cout << "Usage: " << argv[0] << " <directory> <k> <t> <b>" << endl;
-    cout << "where:" << endl;
-    cout << "  <directory> is the directory containing text files to compare" << endl;
-    cout << "  <k> is the shingle size" << endl;
-    cout << "  <t> is the number of hash functions" << endl;
-    cout << "  <b> is the number of bands for LSH" << endl;
-    return 1;
-  }
 
-  // Get directory path
-  string dirPath = argv[1];
-
-  // Get k value from command line
-  k = stoi(argv[2]);
-  if (k <= 0)
-  {
-    cerr << "Error: k must be positive" << endl;
-    return 1;
-  }
-
-  // Get numHashFunctions (t) value from command line
-  numHashFunctions = stoi(argv[3]);
-  if (numHashFunctions <= 0)
-  {
-    cerr << "Error: t (number of hash functions) must be positive" << endl;
-    return 1;
-  }
-
-  // Get b value from command line
-  int b = stoi(argv[4]);
-  if (b <= 0)
-  {
-    cerr << "Error: b must be positive" << endl;
-    return 1;
-  }
-
-  if (b > numHashFunctions)
-  {
-    cerr << "Error: b (number of bands) cannot be greater than t (number of hash functions)" << endl;
-    return 1;
-  }
-
-  // Initialize hash functions
-  initializeHashFunctions();
-
-  // Vector to store all file paths
-  vector<string> filePaths;
-
-  // Check if directory exists
-  if (!fs::exists(dirPath) || !fs::is_directory(dirPath))
-  {
-    cerr << "Error: Directory not found or is not a directory: " << dirPath << endl;
-    return 1;
-  }
-
-  // Collect all text files from the directory
-  // cout << "Collecting files from directory: " << dirPath << endl;
-  for (const auto &entry : fs::directory_iterator(dirPath))
-  {
-    if (entry.is_regular_file())
-    {
-      string extension = entry.path().extension().string();
-      if (extension == ".txt" || extension == ".doc" || extension == ".md")
-      {
-        filePaths.push_back(entry.path().string());
-      }
-    }
-  }
-
-  if (filePaths.empty())
-  {
-    cerr << "Error: No valid text files found in directory." << endl;
-    return 1;
-  }
-
-  // cout << "Found " << filePaths.size() << " files to compare." << endl;
-
-  // Map to store file contents and their signatures
-  map<string, pair<string, vector<int>>> fileContents;
-
-  // Read all files and compute signatures
-  for (const auto &filePath : filePaths)
-  {
-    // cout << "Processing file: " << filePath << endl;
-
-    string content = readFile(filePath);
-    if (content.empty())
-    {
-      cerr << "Warning: File is empty or could not be read: " << filePath << endl;
-      continue;
-    }
-
-    unordered_set<string> kShingles;
-    size_t estimatedSize = max(1UL, (unsigned long)content.length() / 10);
-    kShingles.reserve(estimatedSize);
-
-    tratar(content, kShingles);
-
-    if (kShingles.empty())
-    {
-      cerr << "Warning: No k-shingles could be extracted from: " << filePath << endl;
-      continue;
-    }
-
-    vector<int> signature = computeMinHashSignature(kShingles);
-    fileContents[filePath] = make_pair(content, signature);
-  }
-
-  // Store results
+  string filename1,filename2,category;
   vector<SimilarityResult> results;
-
-  // Compare all pairs of files
-  int totalComparisons = 0;
-  int similarFiles = 0;
-
-  // cout << "\nComparing files..." << endl;
-
-  for (size_t i = 0; i < filePaths.size(); i++)
+  auto startTime = chrono::high_resolution_clock::now();
   {
-    for (size_t j = i + 1; j < filePaths.size(); j++)
+    Timer timerInit("Total time: ");
+    
+    stopwords = loadStopwords("stopwords-en.json");
+
+    if (argc != 5)
     {
-      string file1 = filePaths[i];
-      string file2 = filePaths[j];
-
-      // Skip if either file couldn't be processed
-      if (fileContents.find(file1) == fileContents.end() ||
-          fileContents.find(file2) == fileContents.end())
-      {
-        continue;
-      }
-
-      totalComparisons++;
-
-      vector<int> &signature1 = fileContents[file1].second;
-      vector<int> &signature2 = fileContents[file2].second;
-
-      float similarity = SimilaridadDeJaccard(signature1, signature2);
-      bool isSimilar = LSH(signature1, signature2, b);
-
-      if (isSimilar)
-      {
-        similarFiles++;
-      }
-
-      results.push_back({file1, file2, similarity, isSimilar});
+      cout << "Usage: " << argv[0] << " <directory> <k> <t> <b>" << endl;
+      cout << "where:" << endl;
+      cout << "  <directory> is the directory containing text files to compare" << endl;
+      cout << "  <k> is the shingle size" << endl;
+      cout << "  <t> is the number of hash functions" << endl;
+      cout << "  <b> is the number of bands for LSH" << endl;
+      return 1;
     }
-  }
 
-  // Get category from directory path
-  string category = determineCategory(dirPath);
+    // Get directory path
+    string dirPath = argv[1];
+
+    // Get k value from command line
+    k = stoi(argv[2]);
+    if (k <= 0)
+    {
+      cerr << "Error: k must be positive" << endl;
+      return 1;
+    }
+
+    // Get numHashFunctions (t) value from command line
+    numHashFunctions = stoi(argv[3]);
+    if (numHashFunctions <= 0)
+    {
+      cerr << "Error: t (number of hash functions) must be positive" << endl;
+      return 1;
+    }
+
+    // Get b value from command line
+    int b = stoi(argv[4]);
+    if (b <= 0)
+    {
+      cerr << "Error: b must be positive" << endl;
+      return 1;
+    }
+
+    if (b > numHashFunctions)
+    {
+      cerr << "Error: b (number of bands) cannot be greater than t (number of hash functions)" << endl;
+      return 1;
+    }
+
+    // Initialize hash functions
+    {
+      Timer timerInit("Initialize hash functions");
+      initializeHashFunctions();
+    }
+
+    // Vector to store all file paths
+    vector<string> filePaths;
+
+    // Check if directory exists
+    if (!fs::exists(dirPath) || !fs::is_directory(dirPath))
+    {
+      cerr << "Error: Directory not found or is not a directory: " << dirPath << endl;
+      return 1;
+    }
+
+    // Collect all text files from the directory
+    // cout << "Collecting files from directory: " << dirPath << endl;
+    for (const auto &entry : fs::directory_iterator(dirPath))
+    {
+      if (entry.is_regular_file())
+      {
+        string extension = entry.path().extension().string();
+        if (extension == ".txt" || extension == ".doc" || extension == ".md")
+        {
+          filePaths.push_back(entry.path().string());
+        }
+      }
+    }
+
+    if (filePaths.empty())
+    {
+      cerr << "Error: No valid text files found in directory." << endl;
+      return 1;
+    }
+
+    // cout << "Found " << filePaths.size() << " files to compare." << endl;
+
+    // Map to store file contents and their signatures
+    map<string, pair<string, vector<int>>> fileContents;
+
+    // Read all files and compute signatures
+    {
+      Timer timerProcessFiles("Read all files and compute signatures");
+      for (const auto &filePath : filePaths)
+      {
+        // cout << "Processing file: " << filePath << endl;
+
+        string content = readFile(filePath);
+        if (content.empty())
+        {
+          cerr << "Warning: File is empty or could not be read: " << filePath << endl;
+          continue;
+        }
+
+        unordered_set<string> kShingles;
+        size_t estimatedSize = max(1UL, (unsigned long)content.length() / 10);
+        kShingles.reserve(estimatedSize);
+
+        tratar(content, kShingles);
+
+        if (kShingles.empty())
+        {
+          cerr << "Warning: No k-shingles could be extracted from: " << filePath << endl;
+          continue;
+        }
+
+        vector<int> signature = computeMinHashSignature(kShingles);
+        fileContents[filePath] = make_pair(content, signature);
+      }
+    }
+
+    // Store results
+    
+
+    // Compare all pairs of files
+    int totalComparisons = 0;
+    int similarFiles = 0;
+
+    // cout << "\nComparing files..." << endl;
+
+    {
+      Timer timerInit("Compare all pairs of files Similarity + LSH");
+      for (size_t i = 0; i < filePaths.size(); i++)
+      {
+        for (size_t j = i + 1; j < filePaths.size(); j++)
+        {
+          string file1 = filePaths[i];
+          string file2 = filePaths[j];
+
+          // Skip if either file couldn't be processed
+          if (fileContents.find(file1) == fileContents.end() ||
+              fileContents.find(file2) == fileContents.end())
+          {
+            continue;
+          }
+
+          totalComparisons++;
+
+          vector<int> &signature1 = fileContents[file1].second;
+          vector<int> &signature2 = fileContents[file2].second;
+
+          float similarity = SimilaridadDeJaccard(signature1, signature2);
+          bool isSimilar = LSH(signature1, signature2, b);
+
+          if (isSimilar)
+          {
+            similarFiles++;
+          }
+
+          results.push_back({file1, file2, similarity, isSimilar});
+        }
+      }
+    }
+    // Get category from directory path
+     category = determineCategory(dirPath);
 
   // Generate filenames for results
   stringstream ss;
@@ -599,7 +612,7 @@ int main(int argc, char *argv[])
      << "_b" << b
      << ".csv";
 
-  string filename1 = ss.str();
+     filename1 = ss.str();
 
   // Generate filename for time results
   stringstream ss2;
@@ -608,10 +621,14 @@ int main(int argc, char *argv[])
       << "_b" << b
       << ".csv";
 
-  string filename2 = ss2.str();
+     filename2 = ss2.str();
+
+  }
+
+
+  writeResultsToCSV(filename1, filename2, results);
 
   // Write results to CSV files
-  writeResultsToCSV(filename1, filename2, results);
 
   // Calculate and display total execution time
   auto endTime = chrono::high_resolution_clock::now();
