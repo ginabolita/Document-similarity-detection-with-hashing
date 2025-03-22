@@ -39,6 +39,8 @@ def run_corpus_mode(executable_path,
                     thr=None):
     """Run corpus mode experiment"""
     cmd = [executable_path, dataset_path]
+
+    print(f"Running {executable_path} on {dataset_path} with k={k},  b={b}, t={t}, thr={thr}")
     
     # Generate base filename parts based on provided parameters
     param_parts = []
@@ -52,7 +54,7 @@ def run_corpus_mode(executable_path,
         param_parts.append(f"threshold{thr}")
     
     # Determine algorithm type from executable path
-    if 'bruteForce' in executable_path:
+    if 'BruteForce' in executable_path:
         algo_type = 'bruteForce'
     elif 'MinHash' in executable_path:
         algo_type = 'MinHash'
@@ -66,7 +68,7 @@ def run_corpus_mode(executable_path,
         algo_type = 'unknown'
 
     # Handle specific parameter requirements for LSH bucketing and forest
-    if 'lsh_bucketing' in executable_path or 'lsh_forest' in executable_path:
+    if 'LSHbucketing' in executable_path or 'LSHforest' in executable_path:
         if k is None or t is None or b is None or thr is None:
             logging.error(
                 f"Error: {executable_path} requires k, t, b, and thr parameters."
@@ -90,20 +92,23 @@ def run_corpus_mode(executable_path,
         if thr is not None:
             cmd.append(str(thr))
 
-    # Create output file paths for both similarities and times
-    similarity_csv = os.path.join(output_dir, f"{algo_type}Similarities_{'_'.join(param_parts)}.csv")
-    times_csv = os.path.join(output_dir, f"{algo_type}Times_{'_'.join(param_parts)}.csv")
-
     try:
         start_time = time.time()
         # Execute the command
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        print(cmd)
+        subprocess.run(cmd, capture_output=True, text=True, check=True)
         end_time = time.time()
 
         # Log the run
         logging.info(
             f"Successfully ran corpus mode {executable_path} on {dataset_path}"
         )
+
+        # Get output CSV files
+        similarity_csv = os.path.join(output_dir, f"{algo_type}/{algo_type}Similarities_{'_'.join(param_parts)}.csv")
+        times_csv = os.path.join(output_dir, f"{algo_type}/{algo_type}Times_{'_'.join(param_parts)}.csv")
+
+        print(f"Output CSV files: {similarity_csv}, {times_csv}")
 
         return {
             'dataset': dataset_path,
@@ -157,6 +162,7 @@ def parse_csv_results(result):
 
     # Parse similarity CSV if it exists
     try:
+        print(result['similarity_csv'])
         if os.path.exists(result['similarity_csv']):
             similarity_df = pd.read_csv(result['similarity_csv'])
             # Extract document pairs
@@ -168,6 +174,10 @@ def parse_csv_results(result):
                     doc2 = row[1] if len(row) > 1 else None
                     if doc1 is not None and doc2 is not None:
                         similar_pairs.append((str(doc1), str(doc2)))
+            else:
+                logging.error(f"No similar pairs found for {result['method']}")
+        else:
+            logging.error(f"Similarity CSV not found for {result['method']}")
     except Exception as e:
         logging.error(f"Error parsing similarity CSV: {e}")
 
@@ -187,6 +197,12 @@ def parse_csv_results(result):
                             index_build_time = float(time_value)
                         elif "query" in task.lower() and time_value is not None:
                             query_time = float(time_value)
+                    else:
+                        logging.error(f"Invalid task name in times CSV: {task}")
+            else:
+                logging.error(f"No timing information found for {result['method']}")
+        else:
+            logging.error(f"Times CSV not found for {result['method']}")
     except Exception as e:
         logging.error(f"Error parsing times CSV: {e}")
 
@@ -205,329 +221,89 @@ def parse_csv_results(result):
     }
 
 
-def run_corpus_experiment(bin, dataset_dir, output_dir, k_values,
-                          t_values, b_values, thr_values):
-    """Run corpus mode experiments"""
+def run_parameter_experiment(bin, dataset_dir, output_dir, param_to_vary, 
+                            base_k=5, base_t=500, base_b=50, base_thr=0.5):
+    """Run experiments varying one parameter while fixing others"""
     results = []
-
-    # For each executable
+    
+    # Convert base_b from percentage to actual value based on base_t
+    base_b_value = int(base_t * (base_b / 100.0)) if base_b is not None else None
+    
+    logging.info(f"Running experiment varying {param_to_vary}")
+    
     for exec_name, exec_path in bin.items():
-        logging.info(f"Running corpus mode for {exec_name}")
-
-        # Filter parameter values based on algorithm type
-        b_values_filtered = b_values if 'lsh' in exec_name else [None]
-        thr_values_filtered = thr_values if exec_name not in [
-            'minhash', 'lsh_basic', 'brute_force'
-        ] else [None]
-        t_values_filtered = t_values if exec_name != 'brute_force' else [None]
-
-        print(f"b_values_filtered: {b_values_filtered}")
-        print(f"thr_values_filtered: {thr_values_filtered}")
-        print(f"t_values_filtered: {t_values_filtered}")
-
-        # For each parameter combination
-        for k in k_values:
-            for t in t_values_filtered:
-                for b in b_values_filtered:
-                    if b is not None:
-                        b = int(t * (b / 100.0))  # Convert percentage to value
-                    for thr in thr_values_filtered:
-                        # Run the executable
-                        result = run_corpus_mode(exec_path, dataset_dir,
-                                                output_dir, k, t, b, thr)
-
-                        # Parse the CSV results
-                        parsed_result = parse_csv_results(result)
-
-                        # For CSV export, convert similar_pairs to count
-                        parsed_result['similar_pairs_count'] = len(
-                            parsed_result['similar_pairs'])
-
-                        results.append(parsed_result)
-
-    # Create a DataFrame with the results
+        logging.info(f"Running {exec_name} with varying {param_to_vary}")
+        
+        # Define which parameters to use based on algorithm type
+        uses_t = exec_name != 'brute_force'
+        uses_b = 'lsh' in exec_name
+        uses_thr = exec_name not in ['minhash', 'lsh_basic', 'brute_force']
+        
+        # Set parameter values for this algorithm
+        k_val = base_k
+        t_val = base_t if uses_t else None
+        b_val = base_b_value if uses_b else None
+        thr_val = base_thr if uses_thr else None
+        
+        # Get parameter values to vary
+        if param_to_vary == 'k':
+            values_to_try = [3, 5, 7, 9]
+        elif param_to_vary == 't' and uses_t:
+            values_to_try = [300, 500, 700]
+        elif param_to_vary == 'b' and uses_b:
+            # Convert percentage to actual values
+            values_to_try = [int(base_t * (pct / 100.0)) for pct in [30, 50, 70]]
+        elif param_to_vary == 'thr' and uses_thr:
+            values_to_try = [0.4, 0.5, 0.6]
+        else:
+            values_to_try = []  # Skip if parameter doesn't apply to this algorithm
+            
+        # Run experiments with varying parameter
+        for val in values_to_try:
+            # Set the parameter to vary
+            if param_to_vary == 'k':
+                k_val = val
+            elif param_to_vary == 't':
+                t_val = val
+                # Update b since it depends on t
+                if uses_b:
+                    b_val = int(val * (base_b / 100.0))
+            elif param_to_vary == 'b':
+                b_val = val
+            elif param_to_vary == 'thr':
+                thr_val = val
+                
+            # Run with current parameter values
+            result = run_corpus_mode(exec_path, dataset_dir, output_dir, 
+                                    k_val, t_val, b_val, thr_val)
+            
+            # Parse results
+            parsed_result = parse_csv_results(result)
+            parsed_result['similar_pairs_count'] = len(parsed_result['similar_pairs'])
+            parsed_result['varied_param'] = param_to_vary
+            parsed_result['varied_value'] = val
+            
+            results.append(parsed_result)
+    
+    # Create DataFrame with results
     df = pd.DataFrame(results)
-
+    
+    # Save results to CSV
+    results_file = os.path.join(output_dir, f"results_vary_{param_to_vary}.csv")
+    df.to_csv(results_file, index=False)
+    
     return df
-
-# TODO: aquí metemos las visualizaciones (ahora está mal)
-def visualize_corpus_results(results_df, output_dir):
-    """Create visualizations for corpus experiment results"""
-    # Plot index build time vs k
-    plt.figure(figsize=(12, 8))
-
-    for method, group in results_df.groupby('method'):
-        k_values = []
-        build_times = []
-
-        for k, k_group in group.groupby('k'):
-            k_values.append(k)
-            # Add error checking for missing values
-            build_time = k_group['index_build_time'].mean()
-            if pd.notna(build_time):
-                build_times.append(build_time)
-            else:
-                build_times.append(0)  # or some placeholder value
-
-        if k_values and build_times:  # Only plot if we have data
-            plt.plot(k_values, build_times, marker='o', label=method)
-
-    plt.title("Average Index Build Time vs. k")
-    plt.xlabel("Shingle size (k)")
-    plt.ylabel("Build Time (seconds)")
-    plt.legend()
-    plt.grid(True)
-    plt.savefig(os.path.join(output_dir, "build_time_vs_k.png"))
-
-    # Plot query time vs t
-    plt.figure(figsize=(12, 8))
-
-    for method, group in results_df.groupby('method'):
-        if 't' in group.columns:  # Check if t exists in the dataframe
-            t_values = []
-            query_times = []
-
-            for t, t_group in group.groupby('t'):
-                if pd.notna(t):  # Skip None values
-                    t_values.append(t)
-                    # Add error checking for missing values
-                    query_time = t_group['query_time'].mean()
-                    if pd.notna(query_time):
-                        query_times.append(query_time)
-                    else:
-                        query_times.append(0)  # or some placeholder value
-
-            if t_values and query_times:  # Only plot if we have data
-                plt.plot(t_values, query_times, marker='o', label=method)
-
-    plt.title("Average Query Time vs. t")
-    plt.xlabel("MinHash size (t)")
-    plt.ylabel("Query Time (seconds)")
-    plt.legend()
-    plt.grid(True)
-    plt.savefig(os.path.join(output_dir, "query_time_vs_t.png"))
-
-    # Add a new plot for b parameter (LSH-specific)
-    plt.figure(figsize=(12, 8))
-
-    for method, group in results_df.groupby('method'):
-        if 'lsh' in method and 'b' in group.columns:
-            b_values = []
-            query_times = []
-
-            for b, b_group in group.groupby('b'):
-                if pd.notna(b):
-                    b_values.append(b)
-                    query_time = b_group['query_time'].mean()
-                    if pd.notna(query_time):
-                        query_times.append(query_time)
-                    else:
-                        query_times.append(0)
-
-            if b_values and query_times:
-                plt.plot(b_values, query_times, marker='o', label=method)
-
-    plt.title("Average Query Time vs. b (LSH parameter)")
-    plt.xlabel("Number of bands (b)")
-    plt.ylabel("Query Time (seconds)")
-    plt.legend()
-    plt.grid(True)
-    plt.savefig(os.path.join(output_dir, "query_time_vs_b.png"))
-
-    # Add a new plot for thr parameter
-    plt.figure(figsize=(12, 8))
-
-    for method, group in results_df.groupby('method'):
-        if 'thr' in group.columns:
-            thr_values = []
-            similar_pairs_counts = []
-
-            for thr, th_group in group.groupby('thr'):
-                if pd.notna(thr):
-                    thr_values.append(thr)
-                    # Count the number of similar pairs
-                    similar_pairs_count = th_group['similar_pairs_count'].mean(
-                    )
-                    similar_pairs_counts.append(similar_pairs_count)
-
-            if thr_values and similar_pairs_counts:
-                plt.plot(thr_values,
-                         similar_pairs_counts,
-                         marker='o',
-                         label=method)
-
-    plt.title("Average Number of Similar Pairs vs. thr")
-    plt.xlabel("Similarity thr")
-    plt.ylabel("Number of Similar Pairs")
-    plt.legend()
-    plt.grid(True)
-    plt.savefig(os.path.join(output_dir, "similar_pairs_vs_thr.png"))
-
-
-def generate_report(corpus_results, output_dir):
-    """Generate a summary report"""
-    report_path = os.path.join(output_dir, "experiment_report.txt")
-
-    with open(report_path, 'w') as f:
-        f.write("Document Similarity Methods Evaluation Report\n")
-        f.write("===========================================\n\n")
-
-        # Corpus Experiments
-        if corpus_results is not None:
-            f.write("Corpus Mode Results\n")
-            f.write("---------------------\n\n")
-
-            # Method comparison
-            f.write("Method Performance Comparison:\n")
-
-            # Safe way to find fastest/slowest methods
-            method_build_times = {}
-            method_query_times = {}
-
-            for method, group in corpus_results.groupby('method'):
-                build_times = group['index_build_time'].dropna()
-                query_times = group['query_time'].dropna()
-
-                if not build_times.empty:
-                    avg_build_time = build_times.mean()
-                    method_build_times[method] = avg_build_time
-                    f.write(f"  {method}:\n")
-                    f.write(
-                        f"    Average index build time = {avg_build_time:.6f} seconds\n"
-                    )
-
-                if not query_times.empty:
-                    avg_query_time = query_times.mean()
-                    method_query_times[method] = avg_query_time
-                    f.write(
-                        f"    Average query time = {avg_query_time:.6f} seconds\n"
-                    )
-
-            f.write("\n")
-
-            # Parameter effects
-            f.write("Parameter Effects:\n")
-
-            for method, group in corpus_results.groupby('method'):
-                f.write(f"  {method}:\n")
-
-                for k, k_group in group.groupby('k'):
-                    build_times = k_group['index_build_time'].dropna()
-                    if not build_times.empty:
-                        avg_build_time = build_times.mean()
-                        f.write(
-                            f"    k={k}: Average build time = {avg_build_time:.6f} seconds\n"
-                        )
-
-                if 't' in group.columns:
-                    for t, t_group in group.groupby('t'):
-                        if pd.notna(t):
-                            query_times = t_group['query_time'].dropna()
-                            if not query_times.empty:
-                                avg_query_time = query_times.mean()
-                                f.write(
-                                    f"    t={t}: Average query time = {avg_query_time:.6f} seconds\n"
-                                )
-
-                if 'b' in group.columns and 'lsh' in method:
-                    for b, b_group in group.groupby('b'):
-                        if pd.notna(b):
-                            query_times = b_group['query_time'].dropna()
-                            if not query_times.empty:
-                                avg_query_time = query_times.mean()
-                                f.write(
-                                    f"    b={b}: Average query time = {avg_query_time:.6f} seconds\n"
-                                )
-
-                if 'thr' in group.columns:
-                    for thr, th_group in group.groupby('thr'):
-                        if pd.notna(thr):
-                            similar_pairs_counts = th_group[
-                                'similar_pairs_count']
-                            if not similar_pairs_counts.empty:
-                                avg_similar_pairs = similar_pairs_counts.mean()
-                                f.write(
-                                    f"    thr={thr}: Average similar pairs found = {avg_similar_pairs:.2f}\n"
-                                )
-
-                f.write("\n")
-
-        # Observations and Recommendations
-        f.write("Observations and Recommendations\n")
-        f.write("---------------------------------\n\n")
-
-        # Add observations based on results
-        f.write("Observations:\n")
-
-        if corpus_results is not None:
-            # Compare methods by build time (safely)
-            if method_build_times:
-                fastest_build = min(method_build_times.items(),
-                                    key=lambda x: x[1])[0]
-                slowest_build = max(method_build_times.items(),
-                                    key=lambda x: x[1])[0]
-                f.write(
-                    f"  - {fastest_build} has the fastest index build time\n")
-                f.write(
-                    f"  - {slowest_build} has the slowest index build time\n")
-
-            # Compare methods by query time (safely)
-            if method_query_times:
-                fastest_query = min(method_query_times.items(),
-                                    key=lambda x: x[1])[0]
-                slowest_query = max(method_query_times.items(),
-                                    key=lambda x: x[1])[0]
-                f.write(f"  - {fastest_query} has the fastest query time\n")
-                f.write(f"  - {slowest_query} has the slowest query time\n")
-
-            # Analyze parameter effects
-            f.write("  - Increasing k generally increases index build time\n")
-            f.write("  - Increasing t affects query time and accuracy\n")
-            if any('lsh' in method
-                   for method in corpus_results['method'].unique()):
-                f.write(
-                    "  - LSH parameters (b, thr) offer a trade-off between speed and accuracy\n"
-                )
-
-        f.write("\n")
-
-        f.write("Recommendations:\n")
-        f.write(
-            "  - For small document collections, brute force may be sufficient\n"
-        )
-        f.write(
-            "  - For large collections, LSH methods offer better scaling\n")
-        f.write(
-            "  - Tune k based on document length and vocabulary diversity\n")
-        f.write("  - Adjust t to balance accuracy and performance\n")
-        if any('lsh' in method
-               for method in corpus_results['method'].unique()):
-            f.write(
-                "  - For LSH, increase b for better accuracy at the cost of performance\n"
-            )
-            f.write("  - Choose thr based on the specific application needs\n")
-        f.write("\n")
-
-        # Conclusion
-        f.write("Conclusion\n")
-        f.write("-------------\n\n")
-        f.write(
-            "  The experiments provide a comprehensive evaluation of different Jaccard similarity\n"
-        )
-        f.write(
-            "  computation methods. The choice of method and parameters should be based on the\n"
-        )
-        f.write(
-            "  specific requirements of the application, particularly the trade-off between\n"
-        )
-        f.write("  accuracy and performance.\n")
-
-    return report_path
 
 
 def prepare_datasets(mode, num_docs):
     """Prepare datasets based on mode"""
     logging.info(f"Preparing {mode} datasets with {num_docs} documents...")
+
+    # if datasets already exist, erase them
+    if len(os.listdir(f'datasets/{mode}/')) > 0:
+        logging.info("Deleting existing datasets...")
+        for file in os.listdir(f'datasets/{mode}/'):
+            os.remove(f'datasets/{mode}/{file}')
 
     if mode == 'real':
         gen_k = None
@@ -543,9 +319,6 @@ def prepare_datasets(mode, num_docs):
                                 text=True,
                                 check=True)
         end_time = time.time()
-
-        # Get the directory path from stdout
-        # TODO: si quereis que no se imprima todos los archivos creados del exp1 y exp2 :: output_dir = result.stdout.strip()
 
         # Log the run
         logging.info(
@@ -574,26 +347,6 @@ def main():
                         choices=['real', 'virtual'],
                         required=True,
                         help='Dataset mode: real or virtual')
-    parser.add_argument('--k_values',
-                        nargs='+',
-                        type=int,
-                        help='List of k values to test',
-                        default=list(range(1, 15))) # 1, 2, ..., 14
-    parser.add_argument('--t_values',
-                        nargs='+',
-                        type=int,
-                        help='List of t values to test',
-                        default=list(range(100, 1001, 100)))   # 100, 200, ..., 1000
-    parser.add_argument('--b_values',
-                        nargs='+',
-                        type=int,
-                        help='List of b values to test THEY WILL BE PERCENTAGES OF T',
-                        default=list(range(1, 101, 10)))    # 1, 11, ..., 91
-    parser.add_argument('--thr_values',
-                        nargs='+',
-                        type=float,
-                        default= [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
-                        help='List of thr values to test')
     parser.add_argument('--num_docs',
                         type=int,
                         default=300,
@@ -601,6 +354,27 @@ def main():
     parser.add_argument('--prepare_datasets',
                         action='store_true',
                         help='Prepare datasets before running experiments')
+    parser.add_argument('--experiment_type',
+                        choices=['vary_k', 'vary_t', 'vary_b', 'vary_thr', 'all'],
+                        default='all',
+                        help='Type of experiment to run')
+    # Base parameter values
+    parser.add_argument('--base_k',
+                        type=int,
+                        default=5,
+                        help='Base value for k (shingle size)')
+    parser.add_argument('--base_t',
+                        type=int,
+                        default=500,
+                        help='Base value for t (number of hash functions)')
+    parser.add_argument('--base_b',
+                        type=int,
+                        default=50,
+                        help='Base value for b as percentage of t')
+    parser.add_argument('--base_thr',
+                        type=float,
+                        default=0.5,
+                        help='Base value for threshold')
 
     args = parser.parse_args()
 
@@ -622,17 +396,29 @@ def main():
     }
 
     dataset_dir = os.path.join('datasets', args.mode)
-    output_dir = os.path.join('results', args.mode, 'corpus')
+    output_dir = os.path.join('results', args.mode)
     os.makedirs(output_dir, exist_ok=True)
 
-    logging.info("Running corpus experiments...")
-    corpus_results = run_corpus_experiment(bin, dataset_dir,
-                                           output_dir, args.k_values,
-                                           args.t_values, args.b_values,
-                                           args.thr_values)
-
-    visualize_corpus_results(corpus_results, output_dir)
-    generate_report(corpus_results, output_dir)
+    # Run experiments based on the specified type
+    if args.experiment_type == 'vary_k' or args.experiment_type == 'all':
+        logging.info("Running experiment varying k...")
+        run_parameter_experiment(bin, dataset_dir, output_dir, 'k', 
+                                args.base_k, args.base_t, args.base_b, args.base_thr)
+        
+    if args.experiment_type == 'vary_t' or args.experiment_type == 'all':
+        logging.info("Running experiment varying t...")
+        run_parameter_experiment(bin, dataset_dir, output_dir, 't', 
+                                args.base_k, args.base_t, args.base_b, args.base_thr)
+        
+    if args.experiment_type == 'vary_b' or args.experiment_type == 'all':
+        logging.info("Running experiment varying b...")
+        run_parameter_experiment(bin, dataset_dir, output_dir, 'b', 
+                                args.base_k, args.base_t, args.base_b, args.base_thr)
+        
+    if args.experiment_type == 'vary_thr' or args.experiment_type == 'all':
+        logging.info("Running experiment varying threshold...")
+        run_parameter_experiment(bin, dataset_dir, output_dir, 'thr', 
+                                args.base_k, args.base_t, args.base_b, args.base_thr)
 
     logging.info("Experiments completed successfully.")
 

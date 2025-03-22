@@ -100,6 +100,7 @@ unordered_set<string> generateShingles(const string& text) {
 }
 
 // Calculate expected similarity based on formula
+// TODO: esto hace falta?
 double calculateExpectedSimilarity(int ni, int nj, int n) {
   double pi = static_cast<double>(ni) / n;
   double pj = static_cast<double>(nj) / n;

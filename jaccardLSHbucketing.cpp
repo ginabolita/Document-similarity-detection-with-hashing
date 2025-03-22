@@ -787,8 +787,8 @@ int main(int argc, char *argv[]) {
 
  std::stringstream ss;
  ss << "results/" << category << "/bucketing/bucketingSimilarities_k" << k
-    << "_t" << t
-    << "_b" << b
+ << "_b" << b
+ << "_t" << t
     << "_threshold" << SIMILARITY_THRESHOLD << ".csv";
 
  filename1 = ss.str();
@@ -796,8 +796,8 @@ int main(int argc, char *argv[]) {
  // Generate the second filename with the same structure (e.g., for time measurements)
  std::stringstream ss2;
  ss2 << "results/" << category << "/bucketing/bucketingTimes_k" << k
-   << "_t" << t
-   << "_b" << b
+ << "_b" << b
+ << "_t" << t
    << "_threshold" << SIMILARITY_THRESHOLD << ".csv";
 
  filename2 = ss2.str();
