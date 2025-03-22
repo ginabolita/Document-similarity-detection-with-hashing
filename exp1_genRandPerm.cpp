@@ -118,18 +118,18 @@ vector<string> permutabasicText(const vector<string>& words,
       // Add space between words, and occasionally add periods to create
       // sentences
       if (j < temp.size() - 1) {
-        shuffledText << " ";
+        //shuffledText << " ";
         // Randomly add periods to create sentence structure (approx every 8-12
         // words)
         if (rand() % 10 == 0) {
-          shuffledText << ". ";
+         // shuffledText << ". ";
         }
       }
     }
 
     // Ensure the document ends with a period
     if (shuffledText.str().back() != '.') {
-      shuffledText << ".";
+      //shuffledText << ".";
     }
 
     permutaciones.push_back(shuffledText.str());
