@@ -18,6 +18,15 @@ namespace fs = filesystem;
 
 typedef unsigned int uint;
 unordered_set<string> stopwords;
+map<string, int> times;
+
+struct Result {
+  string doc1;
+  string doc2;
+  double similarity;
+};
+
+vector <Result> results;
 
 class Timer {
  private:
@@ -34,8 +43,7 @@ class Timer {
     auto duration =
         chrono::duration_cast<chrono::milliseconds>(endTime - startTime)
             .count();
-    // cout << "[Performance] " << operationName << ": " << duration << " ms" <<
-    // endl;
+    times[operationName] = duration;
   }
 };
 
@@ -162,12 +170,23 @@ string extract_doc_number(const string &filename) {
   return filename;  // Return full filename if no match
 }
 
+std::string determineCategory(const std::string &inputDirectory)
+{
+	if (inputDirectory.find("real") != std::string::npos)
+	{
+		return "real";
+	}
+	else if (inputDirectory.find("virtual") != std::string::npos)
+	{
+		return "virtual";
+	}
+	return "unknown"; // Fallback case
+}
+
 //---------------------------------------------------------------------------
 // Main - Process all file pairs in a directory
 //---------------------------------------------------------------------------
 int main(int argc, char *argv[]) {
-  // Start measuring total execution time
-  Timer totalTimer("Total Execution Time");
 
   if (argc != 3) {
     cout << "Usage: " << argv[0] << " <directory> <k>" << endl;
@@ -190,42 +209,91 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  // Write CSV header
-  cout << "Doc1,Doc2,Sim%" << endl;
+  // Pre-allocate space for results
+  results.reserve(files.size() * (files.size() - 1) / 2);
 
-  for (size_t i = 0; i < files.size(); i++) {
-    string doc1 = extract_doc_number(files[i]);
-    if (doc1 == "0") continue;  // Skip document 0
-
-    for (size_t j = i + 1; j < files.size(); j++) {
-      string doc2 = extract_doc_number(files[j]);
-      if (doc2 == "0") continue;  // Skip document 0
-
-      string text1 = remove_punctuation(readFile(files[i]));
-      string text2 = remove_punctuation(readFile(files[j]));
-
-      if (text1.empty() || text2.empty()) continue;
-
-      double similarity = 0.0;
-      unordered_set<string> shingles1;
-      unordered_set<string> shingles2;
-      {
-        Timer timer("Create Shingles1");
+  {
+    Timer processTimer("Processing corpus");
+    for (size_t i = 0; i < files.size(); i++) {
+      string doc1 = extract_doc_number(files[i]);
+      if (doc1 == "0") continue;  // Skip document 0
+  
+      for (size_t j = i + 1; j < files.size(); j++) {
+        string doc2 = extract_doc_number(files[j]);
+        if (doc2 == "0") continue;  // Skip document 0
+  
+        string text1 = remove_punctuation(readFile(files[i]));
+        string text2 = remove_punctuation(readFile(files[j]));
+  
+        if (text1.empty() || text2.empty()) continue;
+  
+        double similarity = 0.0;
+        unordered_set<string> shingles1;
+        unordered_set<string> shingles2;
+  
         shingles1 = generateShingles(text1, k);
-      }
-      {
-        Timer timer("Create Shingles2");
         shingles2 = generateShingles(text2, k);
-      }
-      {
-        Timer timer("Calculate Jaccard Similarity");
+  
         similarity = calculateJaccardSimilarity(shingles1, shingles2) * 100;
+        
+        Result result;
+        result.doc1 = doc1;
+        result.doc2 = doc2;
+        result.similarity = similarity;
+        results.push_back(result);
       }
-      // Output the result
-      cout << doc1 << "," << doc2 << "," << fixed << setprecision(2)
-           << similarity << endl;
     }
   }
+
+  // Write results to CSV
+  std::string category = determineCategory(argv[1]);
+
+  // Ensure the category is valid
+  if (category == "unknown") {
+    std::cerr << "Warning: Could not determine category from input directory!" << std::endl;
+    return 1;
+  }
+
+  std::stringstream ss;
+  ss << "results/" << category << "/bruteForceSimilarities_k" << k << ".csv";
+
+  std::string filename1 = ss.str();
+
+  // Generate the second filename with the same structure (e.g., for time measurements)
+  std::stringstream ss2;
+  ss2 << "results/" << category << "/bruteForceTimes_k" << k << ".csv";
+
+  std::string filename2 = ss2.str();
+  {
+    Timer writeTimer("Write Results to CSV");
+    ofstream file(filename1);
+    if (!file.is_open()) {
+      cerr << "Error: Unable to open file " << filename1 << " for writing" << endl;
+      return 1;
+    }
+
+    // Write header
+    file << "Doc1,Doc2,Sim%" << endl;
+
+    for (const auto &result : results) {
+      file << result.doc1 << "," << result.doc2 << "," << fixed << setprecision(6) << result.similarity << endl;
+    }
+
+    file.close();
+  }
+
+  ofstream fileTime(filename2);
+  if (!fileTime.is_open()) {
+    cerr << "Error: Unable to open file " << filename2 << " for writing" << endl;
+    return 1;
+  }
+  
+  // Write header
+  fileTime << "Operation,Time(ms)" << endl;
+  for (const auto &pair : times) {
+    fileTime << pair.first << "," << pair.second << endl;
+  }
+  fileTime.close();
 
   return 0;
 }

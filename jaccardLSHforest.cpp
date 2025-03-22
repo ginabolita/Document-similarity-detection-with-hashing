@@ -55,7 +55,7 @@ struct LSHForestNode
 	}
 };
 
-// LSH Forest structure (replaces the bandBucketMap)
+// LSH Forest structure 
 vector<LSHForestNode *> lshForest;
 
 //---------------------------------------------------------------------------
@@ -94,7 +94,7 @@ int extractNumber(const std::string &filename)
 	return -1; // Si no se encuentra un número, devuelve -1 o maneja el error como prefieras
 }
 
-// Initialize LSH Forest (replaces initializeLSHBuckets)
+// Initialize LSH Forest 
 void initializeLSHForest(int numTrees)
 {
 	// Clean up any existing trees
@@ -760,7 +760,7 @@ int main(int argc, char *argv[])
 
 		{
 			// Add documents to LSH forest
-			Timer timerLSH("LSH Bucketing");
+			Timer timerLSH("LSH Forest insertion");
 			for (size_t i = 0; i < documents.size(); i++)
 			{
 				insertIntoLSHForest(documents[i].signature, i, b);
