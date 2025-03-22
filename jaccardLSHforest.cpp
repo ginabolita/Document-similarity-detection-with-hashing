@@ -55,7 +55,7 @@ struct LSHForestNode
 	}
 };
 
-// LSH Forest structure 
+// LSH Forest structure
 vector<LSHForestNode *> lshForest;
 
 //---------------------------------------------------------------------------
@@ -94,7 +94,7 @@ int extractNumber(const std::string &filename)
 	return -1; // Si no se encuentra un número, devuelve -1 o maneja el error como prefieras
 }
 
-// Initialize LSH Forest 
+// Initialize LSH Forest
 void initializeLSHForest(int numTrees)
 {
 	// Clean up any existing trees
@@ -603,7 +603,8 @@ void writeResultsToCSV(const string &filename1,
 //---------------------------------------------------------------------------
 // Main
 //---------------------------------------------------------------------------
-void printUsage(const char *programName) {
+void printUsage(const char *programName)
+{
 	cout << "Usage options:" << endl;
 	cout << "1. Compare all files in corpus: " << programName
 		 << " <corpus_dir> <k> <b> <t> <sim_threshold>" << endl;
@@ -613,7 +614,7 @@ void printUsage(const char *programName) {
 	cout << "  <b>: Number of bands for LSH" << endl;
 	cout << "  <t>: Number of hash functions" << endl;
 	cout << "  <sim_threshold>: Similarity threshold (0.0 to 1.0)" << endl;
-  }
+}
 
 std::string determineCategory(const std::string &inputDirectory)
 {
@@ -632,158 +633,163 @@ int main(int argc, char *argv[])
 {
 	// Start global timer for entire execution
 	auto startTime = chrono::high_resolution_clock::now();
-	// Load stopwords
-	stopwords = loadStopwords("stopwords-en.json");
-
-	// Check command line arguments
-	if (argc != 6)
-	{
-		printUsage(argv[0]);
-		return 1;
-	}
-
-	// Parse common parameters
-	int paramOffset = 0;
-	string path1, path2;;
-
-	
-	path1 = argv[1];
-	if (!filesystem::is_directory(path1))
-	{
-		cerr << "Error: " << path1 << " is not a directory" << endl;
-		return 1;
-	}
-	paramOffset = 1;
-	
-
-	// Get k value from command line
-	k = stoi(argv[1 + paramOffset]);
-	if (k <= 0)
-	{
-		cerr << "Error: k must be positive" << endl;
-		return 1;
-	}
-
-	// Get b value from command line
-	int b = stoi(argv[2 + paramOffset]);
-	if (b <= 0)
-	{
-		cerr << "Error: b must be positive" << endl;
-		return 1;
-	}
-
-	// Get t value from command line
-	t = stoi(argv[3 + paramOffset]);
-	if (t <= 0)
-	{
-		cerr << "Error: t must be positive" << endl;
-		return 1;
-	}
-
-	// Get t value from command line
-	SIMILARITY_THRESHOLD = stof(argv[4 + paramOffset]);
-	cout << "Using " << b << " bands with threshold " << SIMILARITY_THRESHOLD << endl;
-	if (t <= 0)
-	{
-		cerr << "Error: similarity threshold must be positive" << endl;
-		return 1;
-	}
-
-	// Adjust number of bands based on threshold
-	// cout << "Using " << b << " bands with threshold " << SIMILARITY_THRESHOLD << endl;
-
-	// If threshold is very low, suggest using more bands
-	if (SIMILARITY_THRESHOLD < 0.1 && b < 50)
-	{
-		cout << "Warning: For low threshold (" << SIMILARITY_THRESHOLD
-			 << "), consider using more bands (current: " << b << ")" << endl;
-	}
-
-	// bloque de codigo para que al finalizar se destruya el timer (y mida el tiempo automaticamente)
-	{ // Initialize hash functions
-		Timer timerInit("Initialize hash functions");
-		initializeHashFunctions();
-	}
-
-	// Process documents
 	vector<Document> documents;
-
-
-	cout << "\nFormat: " << endl;
-	cout << "doc1 | doc2 | estimated_similarity" << endl;
-	// Process all files in corpus directory
+	string filename1,filename2, category;
+	
+	// Load stopwords
 	{
-		Timer timerProcessCorpus("Processing corpus");
-		// cout << "Processing files in directory: " << path1 << endl;
+		Timer timerStopwords("Total time:");
+		stopwords = loadStopwords("stopwords-en.json");
 
-		for (const auto &entry : filesystem::directory_iterator(path1))
+		// Check command line arguments
+		if (argc != 6)
 		{
-			if (entry.is_regular_file() && isFilePath(entry.path().string()))
+			printUsage(argv[0]);
+			return 1;
+		}
+
+		// Parse common parameters
+		int paramOffset = 0;
+		string path1, path2;
+		;
+
+		path1 = argv[1];
+		if (!filesystem::is_directory(path1))
+		{
+			cerr << "Error: " << path1 << " is not a directory" << endl;
+			return 1;
+		}
+		paramOffset = 1;
+
+		// Get k value from command line
+		k = stoi(argv[1 + paramOffset]);
+		if (k <= 0)
+		{
+			cerr << "Error: k must be positive" << endl;
+			return 1;
+		}
+
+		// Get b value from command line
+		int b = stoi(argv[2 + paramOffset]);
+		if (b <= 0)
+		{
+			cerr << "Error: b must be positive" << endl;
+			return 1;
+		}
+
+		// Get t value from command line
+		t = stoi(argv[3 + paramOffset]);
+		if (t <= 0)
+		{
+			cerr << "Error: t must be positive" << endl;
+			return 1;
+		}
+
+		// Get t value from command line
+		SIMILARITY_THRESHOLD = stof(argv[4 + paramOffset]);
+		cout << "Using " << b << " bands with threshold " << SIMILARITY_THRESHOLD << endl;
+		if (t <= 0)
+		{
+			cerr << "Error: similarity threshold must be positive" << endl;
+			return 1;
+		}
+
+		// Adjust number of bands based on threshold
+		// cout << "Using " << b << " bands with threshold " << SIMILARITY_THRESHOLD << endl;
+
+		// If threshold is very low, suggest using more bands
+		if (SIMILARITY_THRESHOLD < 0.1 && b < 50)
+		{
+			cout << "Warning: For low threshold (" << SIMILARITY_THRESHOLD
+				 << "), consider using more bands (current: " << b << ")" << endl;
+		}
+
+		// bloque de codigo para que al finalizar se destruya el timer (y mida el tiempo automaticamente)
+		{ // Initialize hash functions
+			Timer timerInit("Initialize hash functions");
+			initializeHashFunctions();
+		}
+
+		// Process documents
+		
+
+		cout << "\nFormat: " << endl;
+		cout << "doc1 | doc2 | estimated_similarity" << endl;
+		// Process all files in corpus directory
+		{
+			Timer timerProcessCorpus("Processing corpus");
+			// cout << "Processing files in directory: " << path1 << endl;
+
+			for (const auto &entry : filesystem::directory_iterator(path1))
 			{
-				string filename = entry.path().string();
-				Document doc(filename);
+				if (entry.is_regular_file() && isFilePath(entry.path().string()))
+				{
+					string filename = entry.path().string();
+					Document doc(filename);
 
-				// Read and process file
-				string content = readFile(filename);
-				tratar(content, doc.kShingles);
+					// Read and process file
+					string content = readFile(filename);
+					tratar(content, doc.kShingles);
 
-				// Compute MinHash signature
-				doc.signature = computeMinHashSignature(doc.kShingles);
+					// Compute MinHash signature
+					doc.signature = computeMinHashSignature(doc.kShingles);
 
-				documents.push_back(doc);
-				// cout << "Processed: " << filename << " - " << doc.kShingles.size() << " shingles" << endl;
+					documents.push_back(doc);
+					// cout << "Processed: " << filename << " - " << doc.kShingles.size() << " shingles" << endl;
+				}
 			}
 		}
-	}
 
-	// Initialize LSH forest
-	cout << "Initializing LSH Forest with " << b << " trees" << endl;
-	initializeLSHForest(b);
+		// Initialize LSH forest
+		cout << "Initializing LSH Forest with " << b << " trees" << endl;
+		initializeLSHForest(b);
 
-	{
-		// Add documents to LSH forest
-		Timer timerLSH("LSH Forest insertion");
-		for (size_t i = 0; i < documents.size(); i++)
 		{
-			insertIntoLSHForest(documents[i].signature, i, b);
+			// Add documents to LSH forest
+			Timer timerLSH("LSH Forest insertion");
+			for (size_t i = 0; i < documents.size(); i++)
+			{
+				insertIntoLSHForest(documents[i].signature, i, b);
+			}
 		}
+
+		{
+			// Find similar document pairs
+			Timer timerFindSimilar("Finding similar documents");
+			similarPairs = queryLSHForest(documents, b);
+		}
+
+		category = determineCategory(argv[1]);
+
+		// Ensure the category is valid
+		if (category == "unknown")
+		{
+			std::cerr << "Warning: Could not determine category from input directory!" << std::endl;
+			return 1;
+		}
+
+		// Report results
+		// cout << "\nFound " << similarPairs.size() << " similar document pairs:" << endl;
+		// Construct filename using a stringstream
+		std::stringstream ss;
+		ss << "results/" << category << "/forest/forestSimilarities_k" << k
+		   << "_t" << t
+		   << "_b" << b
+		   << "_threshold" << SIMILARITY_THRESHOLD << ".csv";
+
+		filename1 = ss.str();
+
+		// Generate the second filename with the same structure (e.g., for time measurements)
+		std::stringstream ss2;
+		ss2 << "results/" << category << "/forest/forestTimes_k" << k
+			<< "_t" << t
+			<< "_b" << b
+			<< "_threshold" << SIMILARITY_THRESHOLD << ".csv";
+
+		filename2 = ss2.str();
 	}
-
-	{
-		// Find similar document pairs
-		Timer timerFindSimilar("Finding similar documents");
-		similarPairs = queryLSHForest(documents, b);
-	}
-
-	std::string category = determineCategory(argv[1]);
-
-	// Ensure the category is valid
-	if (category == "unknown") {
-		std::cerr << "Warning: Could not determine category from input directory!" << std::endl;
-		return 1;
-	}
-
-	// Report results
-	// cout << "\nFound " << similarPairs.size() << " similar document pairs:" << endl;
-	// Construct filename using a stringstream
-	std::stringstream ss;
-	ss << "results/" << category << "/forest/forestSimilarities_k" << k
-		<< "_t" << t
-		<< "_b" << b
-		<< "_threshold" << SIMILARITY_THRESHOLD << ".csv";
-
-	std::string filename1 = ss.str();
-
-	// Generate the second filename with the same structure (e.g., for time measurements)
-	std::stringstream ss2;
-	ss2 << "results/" << category << "/forest/forestTimes_k" << k
-		<< "_t" << t
-		<< "_b" << b
-		<< "_threshold" << SIMILARITY_THRESHOLD << ".csv";
-
-	std::string filename2 = ss2.str();
 	writeResultsToCSV(filename1, filename2, similarPairs, documents);
-	
+
 	auto endTime = chrono::high_resolution_clock::now();
 	auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime);
 	cout << "time: " << duration.count() << " ms" << endl;
