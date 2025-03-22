@@ -33,6 +33,7 @@ int p;                            // Prime number for hash functions
 unordered_set<string> stopwords;  // Stopwords
 vector<pair<int, int>> similarPairs;  // Similar pairs of documents
 vector<vector<float>> Data;
+map<string, int> timeResults;  // Map to store execution times
 
 // Document structure to store document information
 struct Document {
@@ -71,8 +72,7 @@ class Timer {
     auto duration =
         chrono::duration_cast<chrono::milliseconds>(endTime - startTime)
             .count();
-   // cout << "[Performance] " << operationName << ": " << duration << " ms"
-    //     << endl;
+    timeResults[operationName] = duration;
   }
 };
 
@@ -519,6 +519,112 @@ int extractNumber(const std::string& filename) {
     }
 }
 
+void writeResultsToCSV(const string &filename1,
+  const string &filename2,
+  const vector<pair<int, int>> &similarPairs,
+  const vector<Document> &documents)
+{
+// Ensure filename has .csv extension
+string csvFilename = filename1;
+if (csvFilename.substr(csvFilename.length() - 4) != ".csv")
+{
+csvFilename += ".csv";
+}
+
+ofstream file(csvFilename);
+if (!file.is_open())
+{
+cerr << "Error: Unable to open file " << csvFilename << " for writing" << endl;
+return;
+}
+
+// Write header
+file << "Document1,Document2,EstimatedSimilarity" << endl;
+
+// Write data rows
+for (const auto &pair : similarPairs)
+{
+// Extract document IDs from filenames
+string doc1 = documents[pair.first].filename;
+string doc2 = documents[pair.second].filename;
+
+// Parse document IDs from filenames
+string id1, id2;
+
+// Extract document number from filename
+int docNum1 = extractNumber(doc1);
+if (docNum1 != -1)
+{
+id1 = to_string(docNum1);
+}
+else
+{
+id1 = doc1;
+}
+int docNum2 = extractNumber(doc2);
+if (docNum2 != -1)
+{
+id2 = to_string(docNum2);
+}
+else
+{
+id2 = doc2;
+}
+
+// Calculate similarities
+float estSimilarity = estimatedJaccardSimilarity(
+documents[pair.first].signature,
+documents[pair.second].signature);
+
+// Write to CSV with fixed precision
+file << id1 << ","
+<< id2 << ","
+<< fixed << setprecision(6) << estSimilarity
+<< endl;
+}
+
+file.close();
+
+// open new file to store the time results
+string timeFilename = filename2;
+if (timeFilename.substr(timeFilename.length() - 4) != ".csv")
+{
+timeFilename += ".csv";
+}
+
+ofstream fileTime(timeFilename);
+if (!fileTime.is_open())
+{
+cerr << "Error: Unable to open file TimeResults.csv for writing" << endl;
+return;
+}
+
+// Write header
+fileTime << "Operation,Time(ms)" << endl;
+
+for (const auto &pair : timeResults)
+{
+fileTime << pair.first << "," << pair.second << endl;
+}
+
+fileTime.close();
+cout << "Results written to " << csvFilename << endl;
+}
+
+std::string determineCategory(const std::string &inputDirectory)
+{
+	if (inputDirectory.find("real") != std::string::npos)
+	{
+		return "real";
+	}
+	else if (inputDirectory.find("virtual") != std::string::npos)
+	{
+		return "virtual";
+	}
+	return "unknown"; // Fallback case
+}
+
+
 //---------------------------------------------------------------------------
 // Main
 //---------------------------------------------------------------------------
@@ -648,8 +754,6 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  //cout << "Successfully processed " << documents.size() << " documents" << endl;
-
   // Initialize LSH buckets
   {
     Timer timerInitBuckets("Initializing LSH buckets");
@@ -670,36 +774,31 @@ int main(int argc, char *argv[]) {
     similarPairs = findSimilarDocumentPairs(documents, b, SIMILARITY_THRESHOLD);
   }
 
-  // Report results
-  //cout << "\nResults: " << endl;
-  //cout << "Found " << similarPairs.size() << " similar document pairs" << endl;
- // cout << "\nFormat: " << endl;
-  cout << "Doc1,Doc2,estimated_similarity,exact_similarity" << endl;
+ std::string category = determineCategory(argv[1]);
 
+ // Ensure the category is valid
+ if (category == "unknown") {
+   std::cerr << "Warning: Could not determine category from input directory!" << std::endl;
+   return 1;
+ }
 
-  for (const auto &pair : similarPairs) {
-    if (pair.first >= static_cast<int>(documents.size()) ||
-        pair.second >= static_cast<int>(documents.size())) {
-      cerr << "Error: Invalid document indices in pair." << endl;
-      continue;
-    }
+ std::stringstream ss;
+ ss << "results/" << category << "/bucketingSimilarities_k" << k
+    << "_t" << t
+    << "_b" << b
+    << "_threshold" << SIMILARITY_THRESHOLD << ".csv";
 
-    float estSimilarity = estimatedJaccardSimilarity(
-        documents[pair.first].signature, documents[pair.second].signature);
+ std::string filename1 = ss.str();
 
-    float exactSimilarity = exactJaccardSimilarity(
-        documents[pair.first].kShingles, documents[pair.second].kShingles);
+ // Generate the second filename with the same structure (e.g., for time measurements)
+ std::stringstream ss2;
+ ss2 << "results/" << category << "/bucketingTimes_k" << k
+   << "_t" << t
+   << "_b" << b
+   << "_threshold" << SIMILARITY_THRESHOLD << ".csv";
 
-    string d1 = documents[pair.first].filename;
-    string d2 = documents[pair.second].filename;
-
-    int D1 = extractNumber(d1);
-    int D2 = extractNumber(d2);  
-
-    cout << D1 << ","<< D2 << "," 
-          << estSimilarity << ","
-         << exactSimilarity << endl;
-  }
+ std::string filename2 = ss2.str();
+ writeResultsToCSV(filename1, filename2, similarPairs, documents);
 
   // Calculate and display total execution time
   auto endTime = chrono::high_resolution_clock::now();

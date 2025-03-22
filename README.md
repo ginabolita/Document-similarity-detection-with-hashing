@@ -36,32 +36,25 @@ Además, se generan **documentos virtuales** para poder experimentar la efectivi
 ---
 
 ## Instalación
-1. Clona el repositorio:
+1. Clonar el repositorio:
    ```bash
    git clone git@github.com:Androm3d/Proyecto2.git
    ```
-2. Navega al directorio del proyecto:
+2. Navegar al directorio del proyecto:
    ```bash
    cd Proyecto2
    ```
-3. Instala g++-13:
-   ```
+3. Instalar g++-13:
+   ```bash
     sudo apt update
     sudo apt install g++-13
   ``` 
-4. Instalar xxhash:
-   ```bash
-   git clone https://github.com/Cyan4973/xxHash.git deps/xxhash
-   cd deps/xxhash
-   make
-   cd ../..
-   ```
-5. Instalar nlohmann/json.hpp:
-   ```bash
-    mkdir -p deps/nlohmann
-    wget -O deps/nlohmann/json.hpp https://github.com/nlohmann/json/releases/download/v3.11.2/json.hpp
-   ```
-
+4. Ejecutar setup.sh y make:
+  ```bash
+    chmod +x setup.sh
+    ./setup.sh
+    make
+  ```
 ---
 
 ## Uso
