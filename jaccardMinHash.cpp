@@ -19,10 +19,42 @@ using namespace nlohmann;
 namespace fs = std::filesystem;
 
 unsigned int k;                          // Size of k-shingles
-int numHashFunctions;                    // Number of hash functions for minhash (now configurable)
+int t;                    // Number of hash functions for minhash (now configurable)
 vector<pair<int, int>> hashCoefficients; // [a, b] for hashFunction(x) = (ax + b) % p
 int p;                                   // Prime number for hash functions
 unordered_set<string> stopwords;         // Stopwords
+map<string, int> timeResults;            // Map to store execution times
+
+// Document structure to store document information
+struct Document
+{
+    string filename;
+    unordered_set<string> kShingles;
+    vector<int> signature;
+
+    Document(const string &name) : filename(name) {}
+};
+
+// Timer class to measure execution time
+class Timer
+{
+private:
+    chrono::high_resolution_clock::time_point startTime;
+    string operationName;
+
+public:
+    Timer(const string &name) : operationName(name)
+    {
+        startTime = chrono::high_resolution_clock::now();
+    }
+
+    ~Timer()
+    {
+        auto endTime = chrono::high_resolution_clock::now();
+        auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();
+        timeResults[operationName] = duration;
+    }
+};
 
 int extractNumber(const std::string &filename)
 {
@@ -171,8 +203,8 @@ void initializeHashFunctions()
     mt19937 gen(seed);
     uniform_int_distribution<> dis(1, p - 1);
 
-    hashCoefficients.reserve(numHashFunctions);
-    for (int i = 0; i < numHashFunctions; i++)
+    hashCoefficients.reserve(t);
+    for (int i = 0; i < t; i++)
     {
         hashCoefficients.push_back({dis(gen), dis(gen)}); // {Random a, Random b}
     }
@@ -221,7 +253,7 @@ void tratar(const string &texto, unordered_set<string> &kShingles)
 // Function to compute MinHash signatures
 vector<int> computeMinHashSignature(const unordered_set<string> &kShingles)
 {
-    vector<int> signature(numHashFunctions, INT_MAX);
+    vector<int> signature(t, INT_MAX);
 
     // Cache hash values to avoid recomputation
     hash<string> hasher;
@@ -232,7 +264,7 @@ vector<int> computeMinHashSignature(const unordered_set<string> &kShingles)
         int shingleID = hasher(shingle); // Convert shingle to a unique integer
 
         // Apply each hash function
-        for (int i = 0; i < numHashFunctions; i++)
+        for (int i = 0; i < t; i++)
         {
             int a = hashCoefficients[i].first;
             int b = hashCoefficients[i].second;
@@ -253,7 +285,7 @@ float SimilaridadDeJaccard(const vector<int> &signature1, const vector<int> &sig
 
     // When 2 minhashes are equal at a position, it means the shingle used to calculate
     // that position is the same in both texts
-    for (int i = 0; i < numHashFunctions; i++)
+    for (int i = 0; i < t; i++)
     {
         if (signature1[i] == signature2[i])
         {
@@ -261,7 +293,110 @@ float SimilaridadDeJaccard(const vector<int> &signature1, const vector<int> &sig
         }
     }
 
-    return static_cast<float>(iguales) / numHashFunctions;
+    return static_cast<float>(iguales) / t;
+}
+
+void writeResultsToCSV(const string &filename1, 
+    const string &filename2,
+    const vector<pair<string, vector<int>>> &signatures)
+{
+// Ensure filename has .csv extension
+string csvFilename = filename1;
+if (csvFilename.substr(csvFilename.length() - 4) != ".csv")
+{
+csvFilename += ".csv";
+}
+
+// Create directory if it doesn't exist
+fs::path csvPath(csvFilename);
+if (!fs::exists(csvPath.parent_path()))
+{
+fs::create_directories(csvPath.parent_path());
+}
+
+ofstream file(csvFilename);
+if (!file.is_open())
+{
+cerr << "Error: Unable to open file " << csvFilename << " for writing" << endl;
+return;
+}
+
+// Write header
+file << "Document1,Document2,EstimatedSimilarity" << endl;
+
+// Write data rows - compare all pairs
+for (size_t i = 0; i < signatures.size(); i++)
+{
+for (size_t j = i + 1; j < signatures.size(); j++)
+{
+// Extract document paths
+string doc1 = signatures[i].first;
+string doc2 = signatures[j].first;
+
+// Extract document number from filename
+string fileA = fs::path(doc1).filename().string();
+string fileB = fs::path(doc2).filename().string();
+
+int docNum1 = extractNumber(fileA);
+int docNum2 = extractNumber(fileB);
+
+// Calculate similarities
+float similarity = SimilaridadDeJaccard(signatures[i].second, signatures[j].second);
+
+// Write to CSV with fixed precision
+file << docNum1 << ","
+<< docNum2 << ","
+<< fixed << setprecision(6) << similarity
+<< endl;
+}
+}
+
+file.close();
+
+// Open new file to store the time results
+string timeFilename = filename2;
+if (timeFilename.substr(timeFilename.length() - 4) != ".csv")
+{
+timeFilename += ".csv";
+}
+
+// Create directory if it doesn't exist
+fs::path timePath(timeFilename);
+if (!fs::exists(timePath.parent_path()))
+{
+fs::create_directories(timePath.parent_path());
+}
+
+ofstream fileTime(timeFilename);
+if (!fileTime.is_open())
+{
+cerr << "Error: Unable to open file " << timeFilename << " for writing" << endl;
+return;
+}
+
+// Write header
+fileTime << "Operation,Time(ms)" << endl;
+
+for (const auto &pair : timeResults)
+{
+fileTime << pair.first << "," << pair.second << endl;
+}
+
+fileTime.close();
+cout << "Results written to " << csvFilename << endl;
+}
+
+std::string determineCategory(const std::string &inputDirectory)
+{
+	if (inputDirectory.find("real") != std::string::npos)
+	{
+		return "real";
+	}
+	else if (inputDirectory.find("virtual") != std::string::npos)
+	{
+		return "virtual";
+	}
+	return "unknown"; // Fallback case
 }
 
 //-------------------------------------------------------------------------------------------
@@ -295,9 +430,9 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Get numHashFunctions value from command line
-    numHashFunctions = std::stoi(argv[3]);
-    if (numHashFunctions <= 0)
+    // Get t value from command line
+    t = std::stoi(argv[3]);
+    if (t <= 0)
     {
         std::cerr << "Error: Number of hash functions must be positive" << std::endl;
         return 1;
@@ -329,62 +464,90 @@ int main(int argc, char *argv[])
     // std::cout << "Found " << files.size() << " text files in directory" << std::endl;
 
     // Initialize hash functions
-    initializeHashFunctions();
+    {
+        Timer timerInit("Initialize hash functions");
+        initializeHashFunctions();
+    }
 
     // Process each file and compute MinHash signatures
     vector<pair<string, vector<int>>> signatures;
     vector<pair<string, unordered_set<string>>> shingleSets;
 
-    for (const auto &file : files)
     {
-        // std::cout << "Processing file: " << file << std::endl;
-        string text = readFile(file);
-
-        if (text.empty())
+        Timer timerProcess("Processing files");
+        for (const auto &file : files)
         {
-            std::cerr << "Warning: File " << file << " is empty or could not be read. Skipping." << std::endl;
-            continue;
+            // std::cout << "Processing file: " << file << std::endl;
+            string text = readFile(file);
+
+            if (text.empty())
+            {
+                std::cerr << "Warning: File " << file << " is empty or could not be read. Skipping." << std::endl;
+                continue;
+            }
+
+            unordered_set<string> kShingles;
+            size_t estimatedSize = max(1UL, (unsigned long)text.length() / 10);
+            kShingles.reserve(estimatedSize);
+
+            tratar(text, kShingles);
+
+            if (kShingles.empty())
+            {
+                std::cerr << "Warning: No k-shingles could be extracted from file " << file
+                        << ". Make sure the file has at least " << k << " words. Skipping." << std::endl;
+                continue;
+            }
+
+            vector<int> signature = computeMinHashSignature(kShingles);
+            signatures.push_back({file, signature});
+            shingleSets.push_back({file, kShingles});
         }
 
-        unordered_set<string> kShingles;
-        size_t estimatedSize = max(1UL, (unsigned long)text.length() / 10);
-        kShingles.reserve(estimatedSize);
-
-        tratar(text, kShingles);
-
-        if (kShingles.empty())
+        for (size_t i = 0; i < signatures.size(); i++)
         {
-            std::cerr << "Warning: No k-shingles could be extracted from file " << file
-                      << ". Make sure the file has at least " << k << " words. Skipping." << std::endl;
-            continue;
-        }
+            for (size_t j = i + 1; j < signatures.size(); j++)
+            {
+                float similarity = SimilaridadDeJaccard(signatures[i].second, signatures[j].second);
 
-        vector<int> signature = computeMinHashSignature(kShingles);
-        signatures.push_back({file, signature});
-        shingleSets.push_back({file, kShingles});
-    }
+                // Get just the filenames without the full path for better readability
+                string fileA = fs::path(signatures[i].first).filename().string();
+                string fileB = fs::path(signatures[j].first).filename().string();
 
-    // Compare all pairs of files
-    // std::cout << "\nSimilarity Results:\n" << std::endl;
-    std::cout << "Doc1,Doc2,Sim%" << std::endl;
+                int numA = extractNumber(fileA);
+                int numB = extractNumber(fileB);
 
-    for (size_t i = 0; i < signatures.size(); i++)
-    {
-        for (size_t j = i + 1; j < signatures.size(); j++)
-        {
-            float similarity = SimilaridadDeJaccard(signatures[i].second, signatures[j].second);
-
-            // Get just the filenames without the full path for better readability
-            string fileA = fs::path(signatures[i].first).filename().string();
-            string fileB = fs::path(signatures[j].first).filename().string();
-
-            int numA = extractNumber(fileA);
-            int numB = extractNumber(fileB);
-
-            std::cout << numA << "," << numB << "," << similarity << std::endl;
+            }
         }
     }
-    auto endTime = chrono::high_resolution_clock::now();
-    auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime);
-    cout << "time: " << duration.count() << " ms" << endl;
+    
+    std::string category = determineCategory(argv[1]);
+
+    // Ensure the category is valid
+    if (category == "unknown") {
+      std::cerr << "Warning: Could not determine category from input directory!" << std::endl;
+      return 1;
+    }
+   
+    std::stringstream ss;
+    ss << "results/" << category << "/MinHashSimilarities_k" << k
+       << "_t" << t
+       << ".csv";
+   
+    std::string filename1 = ss.str();
+   
+    // Generate the second filename with the same structure (e.g., for time measurements)
+    std::stringstream ss2;
+    ss2 << "results/" << category << "/basicLSHTimes_k" << k
+      << "_t" << t
+      << ".csv";
+   
+    std::string filename2 = ss2.str();
+    writeResultsToCSV(filename1, filename2, signatures);
+   
+     // Calculate and display total execution time
+     auto endTime = chrono::high_resolution_clock::now();
+     auto duration =
+         chrono::duration_cast<chrono::milliseconds>(endTime - startTime);
+     cout << "time: " << duration.count() << " ms" << endl;
 }
