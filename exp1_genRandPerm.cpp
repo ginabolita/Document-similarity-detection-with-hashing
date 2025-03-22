@@ -8,22 +8,24 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+
 #include "deps/nlohmann/json.hpp"
 
 using namespace std;
 using json = nlohmann::json;
 
+unsigned int k, D;
 unordered_set<string> stopwords;
 
-/* bool is_stopword(const string& word) {
-  return stopwords.find(word) != stopwords.end();
-} */
-
 bool is_stopword(const string& word) {
-  string lowerWord = word;
-  transform(lowerWord.begin(), lowerWord.end(), lowerWord.begin(), ::tolower);
-  return stopwords.find(lowerWord) != stopwords.end();
-}
+  return stopwords.find(word) != stopwords.end();
+} 
+
+// bool is_stopword(const string& word) {
+//   string lowerWord = word;
+//   transform(lowerWord.begin(), lowerWord.end(), lowerWord.begin(), ::tolower);
+//   return stopwords.find(lowerWord) != stopwords.end();
+// }
 
 unordered_set<string> loadStopwords(const string& filename) {
   unordered_set<string> stopwords;
@@ -46,28 +48,28 @@ unordered_set<string> loadStopwords(const string& filename) {
 // Function to tokenize text into words
 vector<string> tokenizeWords(const string& text) {
   vector<string> words;
-  stringstream ss(text);
-  string word;
+  string cleanedText;
 
-  // Extract individual words
-  while (ss >> word) {
-    // Remove punctuation from end of words if needed
-    if (!word.empty() && ispunct(word.back())) {
-      word.pop_back();
-    }
-
-    /*     if (!word.empty() && !is_stopword(word)) {
-          words.push_back(word);
-        } */
-
-    // Convert to lowercase and check if it's a stopword
-    string lowerWord = word;
-    transform(lowerWord.begin(), lowerWord.end(), lowerWord.begin(), ::tolower);
-
-    if (!lowerWord.empty() && !is_stopword(lowerWord)) {
-      words.push_back(lowerWord);  // Store lowercase version for consistency
+  // First pass: convert to lowercase and remove punctuation
+  for (char c : text) {
+    if (ispunct(c)) {
+      cleanedText += ' ';  // Replace punctuation with space
+    } else {
+      cleanedText += tolower(c);  // Convert to lowercase
     }
   }
+
+  // Second pass: tokenize and filter stopwords
+  stringstream ss(cleanedText);
+  string word;
+
+  while (ss >> word) {
+    // Skip empty words and stopwords
+    if (!word.empty() && !is_stopword(word)) {
+      words.push_back(word);
+    }
+  }
+
   return words;
 }
 
@@ -182,7 +184,7 @@ int main(int argc, char* argv[]) {
     cout << "where D is the number of documents to generate" << endl;
     return 1;
   }
-  int D = stoi(argv[1]);
+  D = stoi(argv[1]);
   if (D < 20) {
     cerr << "Error: D must be at least 20 according to requirements" << endl;
     return 1;
