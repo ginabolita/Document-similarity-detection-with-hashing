@@ -11,7 +11,7 @@ from itertools import combinations
 
 def create_directories():
     directories = [
-        'results/real', 'results/virtual', 'datasets/real', 'datasets/virtual', 'executables', 'results', 'logs'
+        'results/real', 'results/virtual', 'datasets/real', 'datasets/virtual', 'bin', 'results', 'logs'
     ]
     types = ['bruteForce', 'MinHash', 'LSHbase', 'bucketing', 'forest']
     for directory in directories:
@@ -205,13 +205,13 @@ def parse_csv_results(result):
     }
 
 
-def run_corpus_experiment(executables, dataset_dir, output_dir, k_values,
+def run_corpus_experiment(bin, dataset_dir, output_dir, k_values,
                           t_values, b_values, thr_values):
     """Run corpus mode experiments"""
     results = []
 
     # For each executable
-    for exec_name, exec_path in executables.items():
+    for exec_name, exec_path in bin.items():
         logging.info(f"Running corpus mode for {exec_name}")
 
         # Filter parameter values based on algorithm type
@@ -525,10 +525,10 @@ def prepare_datasets(mode, num_docs):
 
     if mode == 'real':
         gen_k = None
-        cmd = ["./executables/exp1_genRandPerm", str(num_docs)]
+        cmd = ["./bin/exp1_genRandPerm", str(num_docs)]
     else:  # virtual mode
         gen_k = str(random.randint(4, 10))
-        cmd = ["./executables/exp2_genRandShingles", gen_k, str(num_docs)]
+        cmd = ["./bin/exp2_genRandShingles", gen_k, str(num_docs)]
 
     try:
         start_time = time.time()
@@ -607,12 +607,12 @@ def main():
             logging.error("Failed to prepare datasets. Exiting.")
             return
 
-    executables = {
-        'brute_force': './executables/jaccardBruteForce',
-        'minhash': './executables/jaccardMinHash',
-        'lsh_basic': './executables/jaccardLSHbase',
-        'lsh_bucketing': './executables/jaccardLSHbucketing',
-        'lsh_forest': './executables/jaccardLSHforest'
+    bin = {
+        'brute_force': './bin/jaccardBruteForce',
+        'minhash': './bin/jaccardMinHash',
+        'lsh_basic': './bin/jaccardLSHbase',
+        'lsh_bucketing': './bin/jaccardLSHbucketing',
+        'lsh_forest': './bin/jaccardLSHforest'
     }
 
     dataset_dir = os.path.join('datasets', args.mode)
@@ -620,7 +620,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     logging.info("Running corpus experiments...")
-    corpus_results = run_corpus_experiment(executables, dataset_dir,
+    corpus_results = run_corpus_experiment(bin, dataset_dir,
                                            output_dir, args.k_values,
                                            args.t_values, args.b_values,
                                            args.thr_values)

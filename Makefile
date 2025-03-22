@@ -1,11 +1,11 @@
-# Detect a modern compiler (use g++-13 if available, otherwise fallback to g++)
+# g++13 si dispobible porque en la uni g++ por defecto es la versión 7😥
 CXX := $(shell command -v g++-13 >/dev/null 2>&1 && echo g++-13 || echo g++)
-FLAGS = -O3 -std=c++17
+FLAGS = -O3 -Wall -std=c++17
 INCLUDE = -Inlohmann -Ixxhash
 LIBS = deps/xxhash/libxxhash.a
 
 # Define output directory
-OUTDIR = executables
+OUTDIR = bin
 
 # Automatically find all .cpp files and generate targets in the output directory
 SOURCES = $(wildcard *.cpp)
