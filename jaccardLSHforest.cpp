@@ -607,12 +607,12 @@ void printUsage(const char *programName)
 {
 	cout << "Usage options:" << endl;
 	cout << "1. Compare all files in corpus: " << programName
-		 << " <corpus_dir> <k> <b> <t> <sim_threshold>" << endl;
+		 << " <corpus_dir> <k> <t> <b> <sim_threshold>" << endl;
 	cout << "where:" << endl;
 	cout << "  <corpus_dir>: Directory containing text files to compare" << endl;
 	cout << "  <k>: Shingle size (number of consecutive words)" << endl;
-	cout << "  <b>: Number of bands for LSH" << endl;
 	cout << "  <t>: Number of hash functions" << endl;
+	cout << "  <b>: Number of bands for LSH" << endl;
 	cout << "  <sim_threshold>: Similarity threshold (0.0 to 1.0)" << endl;
 }
 
@@ -669,19 +669,19 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		// Get b value from command line
-		int b = stoi(argv[2 + paramOffset]);
-		if (b <= 0)
-		{
-			cerr << "Error: b must be positive" << endl;
-			return 1;
-		}
-
 		// Get t value from command line
-		t = stoi(argv[3 + paramOffset]);
+		t = stoi(argv[2 + paramOffset]);
 		if (t <= 0)
 		{
 			cerr << "Error: t must be positive" << endl;
+			return 1;
+		}
+		
+		// Get b value from command line
+		int b = stoi(argv[3 + paramOffset]);
+		if (b <= 0)
+		{
+			cerr << "Error: b must be positive" << endl;
 			return 1;
 		}
 
@@ -773,8 +773,8 @@ int main(int argc, char *argv[])
 		// Construct filename using a stringstream
 		std::stringstream ss;
 		ss << "results/" << category << "/forest/forestSimilarities_k" << k
-		<< "_b" << b
 		<< "_t" << t
+		<< "_b" << b
 		   << "_threshold" << SIMILARITY_THRESHOLD << ".csv";
 
 		filename1 = ss.str();
@@ -782,8 +782,8 @@ int main(int argc, char *argv[])
 		// Generate the second filename with the same structure (e.g., for time measurements)
 		std::stringstream ss2;
 		ss2 << "results/" << category << "/forest/forestTimes_k" << k
-		<< "_b" << b
 		<< "_t" << t
+		<< "_b" << b
 			<< "_threshold" << SIMILARITY_THRESHOLD << ".csv";
 
 		filename2 = ss2.str();

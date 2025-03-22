@@ -438,7 +438,6 @@ int main(int argc, char *argv[])
 
   string filename1,filename2,category;
   vector<SimilarityResult> results;
-  auto startTime = chrono::high_resolution_clock::now();
   {
     Timer timerInit("time");
     
@@ -481,7 +480,7 @@ int main(int argc, char *argv[])
       cerr << "Error: b must be positive" << endl;
       return 1;
     }
-
+    
     if (b > numHashFunctions)
     {
       cerr << "Error: b (number of bands) cannot be greater than t (number of hash functions)" << endl;
@@ -608,8 +607,8 @@ int main(int argc, char *argv[])
   // Generate filenames for results
   stringstream ss;
   ss << "results/" << category << "/LSHbase/LSHbaseSimilarities_k" << k
+    << "_t" << numHashFunctions
      << "_b" << b
-     << "_t" << numHashFunctions
      << ".csv";
 
      filename1 = ss.str();
@@ -617,8 +616,8 @@ int main(int argc, char *argv[])
   // Generate filename for time results
   stringstream ss2;
   ss2 << "results/" << category << "/LSHbase/LSHbaseTimes_k" << k
+    << "_t" << numHashFunctions
       << "_b" << b
-      << "_t" << numHashFunctions
       << ".csv";
 
      filename2 = ss2.str();
@@ -627,11 +626,4 @@ int main(int argc, char *argv[])
 
 
   writeResultsToCSV(filename1, filename2, results);
-
-  // Write results to CSV files
-
-  // Calculate and display total execution time
-  auto endTime = chrono::high_resolution_clock::now();
-  auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime);
-  cout << "time: " << duration.count() << " ms" << endl;
 }

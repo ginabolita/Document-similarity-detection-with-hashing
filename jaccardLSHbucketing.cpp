@@ -631,12 +631,12 @@ std::string determineCategory(const std::string &inputDirectory)
 void printUsage(const char *programName) {
   cout << "Usage options:" << endl;
   cout << "1. Compare all files in corpus: " << programName
-       << " <corpus_dir> <k> <b> <t> <sim_threshold>" << endl;
+       << " <corpus_dir> <k> <t> <b> <sim_threshold>" << endl;
   cout << "where:" << endl;
   cout << "  <corpus_dir>: Directory containing text files to compare" << endl;
   cout << "  <k>: Shingle size (number of consecutive words)" << endl;
-  cout << "  <b>: Number of bands for LSH" << endl;
   cout << "  <t>: Number of hash functions" << endl;
+  cout << "  <b>: Number of bands for LSH" << endl;
   cout << "  <sim_threshold>: Similarity threshold (0.0 to 1.0)" << endl;
 }
 
@@ -656,8 +656,8 @@ int main(int argc, char *argv[]) {
   // Parse parameters
   string corpusDir = argv[1];
   k = stoi(argv[2]);                     // Shingle size
-  int b = stoi(argv[3]);                 // Number of bands
-  t = stoi(argv[4]);                     // Number of hash functions
+  t = stoi(argv[3]);                     // Number of hash functions
+  int b = stoi(argv[4]);                 // Number of bands
   SIMILARITY_THRESHOLD = stof(argv[5]);  // Similarity threshold
 
   // Validate inputs
@@ -787,8 +787,8 @@ int main(int argc, char *argv[]) {
 
  std::stringstream ss;
  ss << "results/" << category << "/bucketing/bucketingSimilarities_k" << k
- << "_b" << b
  << "_t" << t
+ << "_b" << b
     << "_threshold" << SIMILARITY_THRESHOLD << ".csv";
 
  filename1 = ss.str();
@@ -796,8 +796,8 @@ int main(int argc, char *argv[]) {
  // Generate the second filename with the same structure (e.g., for time measurements)
  std::stringstream ss2;
  ss2 << "results/" << category << "/bucketing/bucketingTimes_k" << k
- << "_b" << b
  << "_t" << t
+ << "_b" << b
    << "_threshold" << SIMILARITY_THRESHOLD << ".csv";
 
  filename2 = ss2.str();
