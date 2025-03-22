@@ -528,7 +528,7 @@ void writeResultsToCSV(const string &filename1,
 	}
 
 	// Write header
-	file << "Document1,Document2,EstimatedSimilarity" << endl;
+	file << "Doc1,Doc2,Sim%" << endl;
 
 	// Write data rows
 	for (const auto &pair : similarPairs)
@@ -638,7 +638,7 @@ int main(int argc, char *argv[])
 	
 	// Load stopwords
 	{
-		Timer timerStopwords("Total time:");
+		Timer timerStopwords("time");
 		stopwords = loadStopwords("stopwords-en.json");
 
 		// Check command line arguments
@@ -796,3 +796,4 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+
