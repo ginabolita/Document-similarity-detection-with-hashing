@@ -61,24 +61,34 @@ vector<LSHForestNode *> lshForest;
 //---------------------------------------------------------------------------
 // Performance Measurement <- Marcel, el timer para y mide el tiempo automaticamente cuando se destruye
 //---------------------------------------------------------------------------
+// Timer class to measure execution time
 class Timer
 {
 private:
-	chrono::high_resolution_clock::time_point startTime;
-	string operationName;
+  chrono::high_resolution_clock::time_point startTime;
+  string operationName;
 
 public:
-	Timer(const string &name) : operationName(name)
-	{
-		startTime = chrono::high_resolution_clock::now();
-	}
+  Timer(const string &name) : operationName(name)
+  {
+    startTime = chrono::high_resolution_clock::now();
+  }
 
-	~Timer()
-	{
-		auto endTime = chrono::high_resolution_clock::now();
-		auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();
-		timeResults[operationName] = duration;
-	}
+  ~Timer()
+  {
+    auto endTime = chrono::high_resolution_clock::now();
+    auto duration =
+        chrono::duration_cast<chrono::milliseconds>(endTime - startTime)
+            .count();
+    if (timeResults.count(operationName) == 0)
+    {
+      timeResults[operationName] = duration;
+    }
+    else
+    {
+      timeResults[operationName] += duration;
+    }
+  }
 };
 
 // extractNumber function to extract document number from filename
@@ -706,7 +716,7 @@ int main(int argc, char *argv[])
 
 		// bloque de codigo para que al finalizar se destruya el timer (y mida el tiempo automaticamente)
 		{ // Initialize hash functions
-			Timer timerInit("Initialize hash functions");
+			Timer timerInit("index build");
 			initializeHashFunctions();
 		}
 
@@ -717,7 +727,7 @@ int main(int argc, char *argv[])
 		cout << "doc1 | doc2 | estimated_similarity" << endl;
 		// Process all files in corpus directory
 		{
-			Timer timerProcessCorpus("Processing corpus");
+			Timer timerProcessCorpus("index build");
 			// cout << "Processing files in directory: " << path1 << endl;
 
 			for (const auto &entry : filesystem::directory_iterator(path1))
@@ -746,7 +756,7 @@ int main(int argc, char *argv[])
 
 		{
 			// Add documents to LSH forest
-			Timer timerLSH("LSH Forest insertion");
+			Timer timerLSH("index build");
 			for (size_t i = 0; i < documents.size(); i++)
 			{
 				insertIntoLSHForest(documents[i].signature, i, b);
@@ -755,7 +765,7 @@ int main(int argc, char *argv[])
 
 		{
 			// Find similar document pairs
-			Timer timerFindSimilar("Finding similar documents");
+			Timer timerFindSimilar("query");
 			similarPairs = queryLSHForest(documents, b);
 		}
 

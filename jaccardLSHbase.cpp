@@ -51,8 +51,17 @@ public:
   ~Timer()
   {
     auto endTime = chrono::high_resolution_clock::now();
-    auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();
-    timeResults[operationName] = duration;
+    auto duration =
+        chrono::duration_cast<chrono::milliseconds>(endTime - startTime)
+            .count();
+    if (timeResults.count(operationName) == 0)
+    {
+      timeResults[operationName] = duration;
+    }
+    else
+    {
+      timeResults[operationName] += duration;
+    }
   }
 };
 
@@ -489,7 +498,7 @@ int main(int argc, char *argv[])
 
     // Initialize hash functions
     {
-      Timer timerInit("Initialize hash functions");
+      Timer timerInit("index build");
       initializeHashFunctions();
     }
 
@@ -530,7 +539,7 @@ int main(int argc, char *argv[])
 
     // Read all files and compute signatures
     {
-      Timer timerProcessFiles("Read all files and compute signatures");
+      Timer timerProcessFiles("index build");
       for (const auto &filePath : filePaths)
       {
         // cout << "Processing file: " << filePath << endl;

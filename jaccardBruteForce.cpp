@@ -29,6 +29,7 @@ struct Result
 
 vector<Result> results;
 
+// Timer class to measure execution time
 class Timer
 {
 private:
@@ -47,7 +48,14 @@ public:
     auto duration =
         chrono::duration_cast<chrono::milliseconds>(endTime - startTime)
             .count();
-    times[operationName] = duration;
+    if (times.count(operationName) == 0)
+    {
+      times[operationName] = duration;
+    }
+    else
+    {
+      times[operationName] += duration;
+    }
   }
 };
 
