@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
 {
   int k;
   {
-    Timer processTimer("Total Time: ");
+    Timer processTimer("time");
     if (argc != 3)
     {
       cout << "Usage: " << argv[0] << " <directory> <k>" << endl;
@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
         shingles1 = generateShingles(text1, k);
         shingles2 = generateShingles(text2, k);
 
-        similarity = calculateJaccardSimilarity(shingles1, shingles2) * 100;
+        similarity = calculateJaccardSimilarity(shingles1, shingles2);
 
         Result result;
         result.doc1 = doc1;
@@ -343,3 +343,4 @@ int main(int argc, char *argv[])
 
   return 0;
 }
+

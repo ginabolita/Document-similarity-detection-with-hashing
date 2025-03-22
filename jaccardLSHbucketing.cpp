@@ -539,7 +539,7 @@ return;
 }
 
 // Write header
-file << "Document1,Document2,EstimatedSimilarity" << endl;
+file << "Doc1,Doc2,Sim%" << endl;
 
 // Write data rows
 for (const auto &pair : similarPairs)
@@ -646,7 +646,7 @@ int main(int argc, char *argv[]) {
   vector<Document> documents;
   
   {
-    Timer timerGlobal("Total execution time");
+    Timer timerGlobal("time");
   // Check command line arguments
   if (argc != 6) {
     printUsage(argv[0]);

@@ -322,7 +322,7 @@ void writeResultsToCSV(const string &filename1,
     }
 
     // Write header
-    file << "Document1,Document2,EstimatedSimilarity" << endl;
+    file << "Doc1,Doc2,Sim%" << endl;
 
     // Write data rows - compare all pairs
     for (size_t i = 0; i < signatures.size(); i++)
@@ -414,7 +414,7 @@ int main(int argc, char *argv[])
     string filename2,filename1, category;
     auto startTime = chrono::high_resolution_clock::now();
     {
-        Timer timerStopwords("Total Execution Time: ");
+        Timer timerStopwords("time");
         stopwords = loadStopwords("stopwords-en.json");
 
         if (argc != 4)

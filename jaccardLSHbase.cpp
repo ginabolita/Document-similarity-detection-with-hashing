@@ -333,7 +333,7 @@ void writeResultsToCSV(const string &filename1,
   }
 
   // Write header
-  file << "Document1,Document2,Similarity,IsSimilar" << endl;
+  file << "Doc1,Doc2,Sim%,IsSimilar" << endl;
 
   // Write data rows
   for (const auto &result : results)
@@ -440,7 +440,7 @@ int main(int argc, char *argv[])
   vector<SimilarityResult> results;
   auto startTime = chrono::high_resolution_clock::now();
   {
-    Timer timerInit("Total time: ");
+    Timer timerInit("time");
     
     stopwords = loadStopwords("stopwords-en.json");
 
