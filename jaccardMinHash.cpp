@@ -19,7 +19,7 @@ using namespace nlohmann;
 namespace fs = std::filesystem;
 
 unsigned int k;                          // Size of k-shingles
-int t;                    // Number of hash functions for minhash (now configurable)
+int t;                                   // Number of hash functions for minhash (now configurable)
 vector<pair<int, int>> hashCoefficients; // [a, b] for hashFunction(x) = (ax + b) % p
 int p;                                   // Prime number for hash functions
 unordered_set<string> stopwords;         // Stopwords
@@ -296,107 +296,107 @@ float SimilaridadDeJaccard(const vector<int> &signature1, const vector<int> &sig
     return static_cast<float>(iguales) / t;
 }
 
-void writeResultsToCSV(const string &filename1, 
-    const string &filename2,
-    const vector<pair<string, vector<int>>> &signatures)
+void writeResultsToCSV(const string &filename1,
+                       const string &filename2,
+                       const vector<pair<string, vector<int>>> &signatures)
 {
-// Ensure filename has .csv extension
-string csvFilename = filename1;
-if (csvFilename.substr(csvFilename.length() - 4) != ".csv")
-{
-csvFilename += ".csv";
-}
+    // Ensure filename has .csv extension
+    string csvFilename = filename1;
+    if (csvFilename.substr(csvFilename.length() - 4) != ".csv")
+    {
+        csvFilename += ".csv";
+    }
 
-// Create directory if it doesn't exist
-fs::path csvPath(csvFilename);
-if (!fs::exists(csvPath.parent_path()))
-{
-fs::create_directories(csvPath.parent_path());
-}
+    // Create directory if it doesn't exist
+    fs::path csvPath(csvFilename);
+    if (!fs::exists(csvPath.parent_path()))
+    {
+        fs::create_directories(csvPath.parent_path());
+    }
 
-ofstream file(csvFilename);
-if (!file.is_open())
-{
-cerr << "Error: Unable to open file " << csvFilename << " for writing" << endl;
-return;
-}
+    ofstream file(csvFilename);
+    if (!file.is_open())
+    {
+        cerr << "Error: Unable to open file " << csvFilename << " for writing" << endl;
+        return;
+    }
 
-// Write header
-file << "Document1,Document2,EstimatedSimilarity" << endl;
+    // Write header
+    file << "Document1,Document2,EstimatedSimilarity" << endl;
 
-// Write data rows - compare all pairs
-for (size_t i = 0; i < signatures.size(); i++)
-{
-for (size_t j = i + 1; j < signatures.size(); j++)
-{
-// Extract document paths
-string doc1 = signatures[i].first;
-string doc2 = signatures[j].first;
+    // Write data rows - compare all pairs
+    for (size_t i = 0; i < signatures.size(); i++)
+    {
+        for (size_t j = i + 1; j < signatures.size(); j++)
+        {
+            // Extract document paths
+            string doc1 = signatures[i].first;
+            string doc2 = signatures[j].first;
 
-// Extract document number from filename
-string fileA = fs::path(doc1).filename().string();
-string fileB = fs::path(doc2).filename().string();
+            // Extract document number from filename
+            string fileA = fs::path(doc1).filename().string();
+            string fileB = fs::path(doc2).filename().string();
 
-int docNum1 = extractNumber(fileA);
-int docNum2 = extractNumber(fileB);
+            int docNum1 = extractNumber(fileA);
+            int docNum2 = extractNumber(fileB);
 
-// Calculate similarities
-float similarity = SimilaridadDeJaccard(signatures[i].second, signatures[j].second);
+            // Calculate similarities
+            float similarity = SimilaridadDeJaccard(signatures[i].second, signatures[j].second);
 
-// Write to CSV with fixed precision
-file << docNum1 << ","
-<< docNum2 << ","
-<< fixed << setprecision(6) << similarity
-<< endl;
-}
-}
+            // Write to CSV with fixed precision
+            file << docNum1 << ","
+                 << docNum2 << ","
+                 << fixed << setprecision(6) << similarity
+                 << endl;
+        }
+    }
 
-file.close();
+    file.close();
 
-// Open new file to store the time results
-string timeFilename = filename2;
-if (timeFilename.substr(timeFilename.length() - 4) != ".csv")
-{
-timeFilename += ".csv";
-}
+    // Open new file to store the time results
+    string timeFilename = filename2;
+    if (timeFilename.substr(timeFilename.length() - 4) != ".csv")
+    {
+        timeFilename += ".csv";
+    }
 
-// Create directory if it doesn't exist
-fs::path timePath(timeFilename);
-if (!fs::exists(timePath.parent_path()))
-{
-fs::create_directories(timePath.parent_path());
-}
+    // Create directory if it doesn't exist
+    fs::path timePath(timeFilename);
+    if (!fs::exists(timePath.parent_path()))
+    {
+        fs::create_directories(timePath.parent_path());
+    }
 
-ofstream fileTime(timeFilename);
-if (!fileTime.is_open())
-{
-cerr << "Error: Unable to open file " << timeFilename << " for writing" << endl;
-return;
-}
+    ofstream fileTime(timeFilename);
+    if (!fileTime.is_open())
+    {
+        cerr << "Error: Unable to open file " << timeFilename << " for writing" << endl;
+        return;
+    }
 
-// Write header
-fileTime << "Operation,Time(ms)" << endl;
+    // Write header
+    fileTime << "Operation,Time(ms)" << endl;
 
-for (const auto &pair : timeResults)
-{
-fileTime << pair.first << "," << pair.second << endl;
-}
+    for (const auto &pair : timeResults)
+    {
+        fileTime << pair.first << "," << pair.second << endl;
+    }
 
-fileTime.close();
-cout << "Results written to " << csvFilename << endl;
+    fileTime.close();
+    cout << "Results written to " << csvFilename << endl;
 }
 
 std::string determineCategory(const std::string &inputDirectory)
 {
-	if (inputDirectory.find("real") != std::string::npos)
-	{
-		return "real";
-	}
-	else if (inputDirectory.find("virtual") != std::string::npos)
-	{
-		return "virtual";
-	}
-	return "unknown"; // Fallback case
+    if (inputDirectory.find("real") != std::string::npos)
+    {
+        return "real";
+    }
+    else if (inputDirectory.find("virtual") != std::string::npos)
+    {
+        return "virtual";
+    }
+    return "unknown"; // Fallback case
 }
 
 //-------------------------------------------------------------------------------------------
@@ -410,144 +410,149 @@ bool isTextFile(const string &filename)
 
 int main(int argc, char *argv[])
 {
-    auto startTime = chrono::high_resolution_clock::now();
-    stopwords = loadStopwords("stopwords-en.json");
-
-    if (argc != 4)
-    {
-        std::cout << "Usage: " << argv[0] << " <directory> <k> <t>" << std::endl;
-        std::cout << "where k is the shingle size and t is the number of hash functions" << std::endl;
-        return 1;
-    }
-
-    string directory = argv[1];
-
-    // Get k value from command line
-    k = std::stoi(argv[2]);
-    if (k <= 0)
-    {
-        std::cerr << "Error: k must be positive" << std::endl;
-        return 1;
-    }
-
-    // Get t value from command line
-    t = std::stoi(argv[3]);
-    if (t <= 0)
-    {
-        std::cerr << "Error: Number of hash functions must be positive" << std::endl;
-        return 1;
-    }
-
-    // Check if directory exists
-    if (!fs::exists(directory) || !fs::is_directory(directory))
-    {
-        std::cerr << "Error: Directory " << directory << " does not exist" << std::endl;
-        return 1;
-    }
-
-    // Collect all text files in the directory
-    vector<string> files;
-    for (const auto &entry : fs::directory_iterator(directory))
-    {
-        if (entry.is_regular_file() && isTextFile(entry.path().string()))
-        {
-            files.push_back(entry.path().string());
-        }
-    }
-
-    if (files.empty())
-    {
-        std::cerr << "Error: No text files found in directory " << directory << std::endl;
-        return 1;
-    }
-
-    // std::cout << "Found " << files.size() << " text files in directory" << std::endl;
-
-    // Initialize hash functions
-    {
-        Timer timerInit("Initialize hash functions");
-        initializeHashFunctions();
-    }
-
-    // Process each file and compute MinHash signatures
     vector<pair<string, vector<int>>> signatures;
-    vector<pair<string, unordered_set<string>>> shingleSets;
-
+    string filename2,filename1, category;
+    auto startTime = chrono::high_resolution_clock::now();
     {
-        Timer timerProcess("Processing files");
-        for (const auto &file : files)
+        Timer timerStopwords("Total Execution Time: ");
+        stopwords = loadStopwords("stopwords-en.json");
+
+        if (argc != 4)
         {
-            // std::cout << "Processing file: " << file << std::endl;
-            string text = readFile(file);
-
-            if (text.empty())
-            {
-                std::cerr << "Warning: File " << file << " is empty or could not be read. Skipping." << std::endl;
-                continue;
-            }
-
-            unordered_set<string> kShingles;
-            size_t estimatedSize = max(1UL, (unsigned long)text.length() / 10);
-            kShingles.reserve(estimatedSize);
-
-            tratar(text, kShingles);
-
-            if (kShingles.empty())
-            {
-                std::cerr << "Warning: No k-shingles could be extracted from file " << file
-                        << ". Make sure the file has at least " << k << " words. Skipping." << std::endl;
-                continue;
-            }
-
-            vector<int> signature = computeMinHashSignature(kShingles);
-            signatures.push_back({file, signature});
-            shingleSets.push_back({file, kShingles});
+            std::cout << "Usage: " << argv[0] << " <directory> <k> <t>" << std::endl;
+            std::cout << "where k is the shingle size and t is the number of hash functions" << std::endl;
+            return 1;
         }
 
-        for (size_t i = 0; i < signatures.size(); i++)
+        string directory = argv[1];
+
+        // Get k value from command line
+        k = std::stoi(argv[2]);
+        if (k <= 0)
         {
-            for (size_t j = i + 1; j < signatures.size(); j++)
+            std::cerr << "Error: k must be positive" << std::endl;
+            return 1;
+        }
+
+        // Get t value from command line
+        t = std::stoi(argv[3]);
+        if (t <= 0)
+        {
+            std::cerr << "Error: Number of hash functions must be positive" << std::endl;
+            return 1;
+        }
+
+        // Check if directory exists
+        if (!fs::exists(directory) || !fs::is_directory(directory))
+        {
+            std::cerr << "Error: Directory " << directory << " does not exist" << std::endl;
+            return 1;
+        }
+
+        // Collect all text files in the directory
+        vector<string> files;
+        for (const auto &entry : fs::directory_iterator(directory))
+        {
+            if (entry.is_regular_file() && isTextFile(entry.path().string()))
             {
-                float similarity = SimilaridadDeJaccard(signatures[i].second, signatures[j].second);
-
-                // Get just the filenames without the full path for better readability
-                string fileA = fs::path(signatures[i].first).filename().string();
-                string fileB = fs::path(signatures[j].first).filename().string();
-
-                int numA = extractNumber(fileA);
-                int numB = extractNumber(fileB);
-
+                files.push_back(entry.path().string());
             }
         }
-    }
-    
-    std::string category = determineCategory(argv[1]);
 
-    // Ensure the category is valid
-    if (category == "unknown") {
-      std::cerr << "Warning: Could not determine category from input directory!" << std::endl;
-      return 1;
+        if (files.empty())
+        {
+            std::cerr << "Error: No text files found in directory " << directory << std::endl;
+            return 1;
+        }
+
+        // std::cout << "Found " << files.size() << " text files in directory" << std::endl;
+
+        // Initialize hash functions
+        {
+            Timer timerInit("Initialize hash functions");
+            initializeHashFunctions();
+        }
+
+        // Process each file and compute MinHash signatures
+        
+        vector<pair<string, unordered_set<string>>> shingleSets;
+
+        {
+            Timer timerProcess("Processing files");
+            for (const auto &file : files)
+            {
+                // std::cout << "Processing file: " << file << std::endl;
+                string text = readFile(file);
+
+                if (text.empty())
+                {
+                    std::cerr << "Warning: File " << file << " is empty or could not be read. Skipping." << std::endl;
+                    continue;
+                }
+
+                unordered_set<string> kShingles;
+                size_t estimatedSize = max(1UL, (unsigned long)text.length() / 10);
+                kShingles.reserve(estimatedSize);
+
+                tratar(text, kShingles);
+
+                if (kShingles.empty())
+                {
+                    std::cerr << "Warning: No k-shingles could be extracted from file " << file
+                              << ". Make sure the file has at least " << k << " words. Skipping." << std::endl;
+                    continue;
+                }
+
+                vector<int> signature = computeMinHashSignature(kShingles);
+                signatures.push_back({file, signature});
+                shingleSets.push_back({file, kShingles});
+            }
+
+            for (size_t i = 0; i < signatures.size(); i++)
+            {
+                for (size_t j = i + 1; j < signatures.size(); j++)
+                {
+                    float similarity = SimilaridadDeJaccard(signatures[i].second, signatures[j].second);
+
+                    // Get just the filenames without the full path for better readability
+                    string fileA = fs::path(signatures[i].first).filename().string();
+                    string fileB = fs::path(signatures[j].first).filename().string();
+
+                    int numA = extractNumber(fileA);
+                    int numB = extractNumber(fileB);
+                }
+            }
+        }
+
+        category = determineCategory(argv[1]);
+
+        // Ensure the category is valid
+        if (category == "unknown")
+        {
+            std::cerr << "Warning: Could not determine category from input directory!" << std::endl;
+            return 1;
+        }
+
+        std::stringstream ss;
+        ss << "results/" << category << "/MinHash/MinHashSimilarities_k" << k
+           << "_t" << t
+           << ".csv";
+
+        filename1 = ss.str();
+
+        // Generate the second filename with the same structure (e.g., for time measurements)
+        std::stringstream ss2;
+        ss2 << "results/" << category << "/MinHash/MinHashTimes_k" << k
+            << "_t" << t
+            << ".csv";
+
+        filename2 = ss2.str();
     }
-   
-    std::stringstream ss;
-    ss << "results/" << category << "/MinHash/MinHashSimilarities_k" << k
-       << "_t" << t
-       << ".csv";
-   
-    std::string filename1 = ss.str();
-   
-    // Generate the second filename with the same structure (e.g., for time measurements)
-    std::stringstream ss2;
-    ss2 << "results/" << category << "/MinHash/MinHashTimes_k" << k
-      << "_t" << t
-      << ".csv";
-   
-    std::string filename2 = ss2.str();
+
     writeResultsToCSV(filename1, filename2, signatures);
-   
-     // Calculate and display total execution time
-     auto endTime = chrono::high_resolution_clock::now();
-     auto duration =
-         chrono::duration_cast<chrono::milliseconds>(endTime - startTime);
-     cout << "time: " << duration.count() << " ms" << endl;
+
+    // Calculate and display total execution time
+    auto endTime = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime);
+    cout << "time: " << duration.count() << " ms" << endl;
 }
