@@ -11,10 +11,15 @@ from itertools import combinations
 
 def create_directories():
     directories = [
-        'datasets/real', 'datasets/virtual', 'executables', 'results', 'logs'
+        'results/real', 'results/virtual', 'datasets/real', 'datasets/virtual', 'executables', 'results', 'logs'
     ]
+    types = ['bruteForce', 'MinHash', 'LSHbase', 'bucketing', 'forest']
     for directory in directories:
-        os.makedirs(directory, exist_ok=True)
+        if 'results/' in directory:
+            for t in types:
+                os.makedirs(os.path.join(directory, t), exist_ok=True)
+        else:
+            os.makedirs(directory, exist_ok=True)
 
 
 # Set up logging
@@ -27,13 +32,38 @@ def setup_logging():
 
 def run_corpus_mode(executable_path,
                     dataset_path,
-                    output_file,
+                    output_dir,
                     k=None,
                     t=None,
                     b=None,
                     thr=None):
     """Run corpus mode experiment"""
     cmd = [executable_path, dataset_path]
+    
+    # Generate base filename parts based on provided parameters
+    param_parts = []
+    if k is not None:
+        param_parts.append(f"k{k}")
+    if b is not None:
+        param_parts.append(f"b{b}")
+    if t is not None:
+        param_parts.append(f"t{t}")
+    if thr is not None:
+        param_parts.append(f"threshold{thr}")
+    
+    # Determine algorithm type from executable path
+    if 'bruteForce' in executable_path:
+        algo_type = 'bruteForce'
+    elif 'MinHash' in executable_path:
+        algo_type = 'MinHash'
+    elif 'LSHbase' in executable_path:
+        algo_type = 'LSHbase'
+    elif 'LSHbucketing' in executable_path:
+        algo_type = 'bucketing'
+    elif 'LSHforest' in executable_path:
+        algo_type = 'forest'
+    else:
+        algo_type = 'unknown'
 
     # Handle specific parameter requirements for LSH bucketing and forest
     if 'lsh_bucketing' in executable_path or 'lsh_forest' in executable_path:
@@ -43,15 +73,12 @@ def run_corpus_mode(executable_path,
             )
             return {
                 'dataset': dataset_path,
-                'output':
-                f"Error: {executable_path} requires k, t, b, and thr parameters.",
+                'output': f"Error: {executable_path} requires k, t, b, and thr parameters.",
                 'runtime': None,
                 'status': 'error'
             }
         # Add parameters in the required order
-        #PARA PONER T Y thr AQUI
         cmd.extend([str(k), str(b)])
-        #, str(t), str(thr)])
     else:
         # Add parameters if provided for other executables
         if k is not None:
@@ -63,26 +90,15 @@ def run_corpus_mode(executable_path,
         if thr is not None:
             cmd.append(str(thr))
 
-    # Fix: Don't include redirection in the command list
-    command_str = " ".join(cmd) + " > " + output_file
+    # Create output file paths for both similarities and times
+    similarity_csv = os.path.join(output_dir, f"{algo_type}Similarities_{'_'.join(param_parts)}.csv")
+    times_csv = os.path.join(output_dir, f"{algo_type}Times_{'_'.join(param_parts)}.csv")
 
     try:
         start_time = time.time()
-        # Fix: Use shell=True to handle redirection
-        result = subprocess.run(command_str,
-                                shell=True,
-                                capture_output=True,
-                                text=True,
-                                check=True)
+        # Execute the command
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         end_time = time.time()
-
-        # Read the output from the file instead
-        try:
-            with open(output_file, 'r') as f:
-                output = f.read()
-        except FileNotFoundError:
-            output = ""
-            logging.warning(f"Output file {output_file} not found")
 
         # Log the run
         logging.info(
@@ -91,86 +107,102 @@ def run_corpus_mode(executable_path,
 
         return {
             'dataset': dataset_path,
-            'output': output,
+            'similarity_csv': similarity_csv,
+            'times_csv': times_csv,
             'runtime': end_time - start_time,
-            'status': 'success'
+            'status': 'success',
+            'method': algo_type,
+            'k': k,
+            't': t,
+            'b': b,
+            'thr': thr
         }
     except subprocess.CalledProcessError as e:
         logging.error(
-            f"Error running corpus mode {executable_path}: {e} \n try running: {command_str}"
+            f"Error running corpus mode {executable_path}: {e}"
         )
         return {
             'dataset': dataset_path,
             'output': e.stderr,
             'runtime': None,
-            'status': 'error'
+            'status': 'error',
+            'method': algo_type,
+            'k': k,
+            't': t,
+            'b': b,
+            'thr': thr
         }
 
 
-def parse_corpus_output(result):
-    """Parse the output from a corpus mode experiment"""
-    # This function will need to be adapted based on the actual output format of your C++ executables
-    if not result['output']:
+def parse_csv_results(result):
+    """Parse results from CSV files instead of output"""
+    if result['status'] == 'error':
         return {
             'dataset': result['dataset'],
             'similar_pairs': [],
             'index_build_time': None,
             'query_time': None,
             'total_runtime': result['runtime'],
-            'status': result['status']
+            'status': result['status'],
+            'method': result['method'],
+            'k': result['k'],
+            't': result['t'],
+            'b': result['b'],
+            'thr': result['thr']
         }
 
-    lines = result['output'].strip().split('\n')
-
-    # Example parsing - adjust based on your actual output format
     similar_pairs = []
     index_build_time = None
     query_time = None
 
-    if 'lsh_bucketing' in result['dataset']:
-        for line in lines:
-            if line.startswith("time:"):
-                # Extract the total runtime from the line
-                try:
-                    total_runtime = int(line.split(":")[1].strip().split()[0])
-                except (ValueError, IndexError):
-                    total_runtime = None
-            elif "," in line:
-                # Parse the line containing the similar pairs
-                parts = line.split(",")
-                if len(parts) >= 4:
-                    doc1 = parts[0].strip()
-                    doc2 = parts[1].strip()
-                    est_similarity = float(parts[2].strip())
-                    exact_similarity = float(parts[3].strip())
-                    similar_pairs.append(
-                        (doc1, doc2, est_similarity, exact_similarity))
-    else:
+    # Parse similarity CSV if it exists
+    try:
+        if os.path.exists(result['similarity_csv']):
+            similarity_df = pd.read_csv(result['similarity_csv'])
+            # Extract document pairs
+            if not similarity_df.empty:
+                # Assuming the CSV has columns for doc1, doc2, and similarity
+                for _, row in similarity_df.iterrows():
+                    # Adjust column names based on actual CSV format
+                    doc1 = row[0] if len(row) > 0 else None
+                    doc2 = row[1] if len(row) > 1 else None
+                    if doc1 is not None and doc2 is not None:
+                        similar_pairs.append((str(doc1), str(doc2)))
+    except Exception as e:
+        logging.error(f"Error parsing similarity CSV: {e}")
 
-        for line in lines:
-            if 'Similar pair:' in line:
-                pair = line.split(':')[1].strip()
-                doc1, doc2 = pair.split(',')
-                similar_pairs.append((doc1.strip(), doc2.strip()))
-            elif 'Index build time:' in line:
-                try:
-                    index_build_time = float(line.split(':')[1].strip())
-                except (ValueError, IndexError):
-                    pass
-            elif 'Query time:' in line:
-                try:
-                    query_time = float(line.split(':')[1].strip())
-                except (ValueError, IndexError):
-                    pass
+    # Parse times CSV if it exists
+    try:
+        if os.path.exists(result['times_csv']):
+            times_df = pd.read_csv(result['times_csv'])
+            # Extract timing information
+            if not times_df.empty:
+                # Assuming the CSV has columns for task and time
+                for _, row in times_df.iterrows():
+                    task = row[0] if len(row) > 0 else ""
+                    time_value = row[1] if len(row) > 1 else None
+                    
+                    if isinstance(task, str):
+                        if "index build" in task.lower() and time_value is not None:
+                            index_build_time = float(time_value)
+                        elif "query" in task.lower() and time_value is not None:
+                            query_time = float(time_value)
+    except Exception as e:
+        logging.error(f"Error parsing times CSV: {e}")
 
-        return {
-            'dataset': result['dataset'],
-            'similar_pairs': similar_pairs,
-            'index_build_time': index_build_time,
-            'query_time': query_time,
-            'total_runtime': result['runtime'],
-            'status': result['status']
-        }
+    return {
+        'dataset': result['dataset'],
+        'similar_pairs': similar_pairs,
+        'index_build_time': index_build_time,
+        'query_time': query_time,
+        'total_runtime': result['runtime'],
+        'status': result['status'],
+        'method': result['method'],
+        'k': result['k'],
+        't': result['t'],
+        'b': result['b'],
+        'thr': result['thr']
+    }
 
 
 def run_corpus_experiment(executables, dataset_dir, output_dir, k_values,
@@ -194,24 +226,12 @@ def run_corpus_experiment(executables, dataset_dir, output_dir, k_values,
             for t in t_values_filtered:
                 for b in b_values_filtered:
                     for thr in thr_values_filtered:
-                        output_file = os.path.join(
-                            output_dir,
-                            f"{exec_name}_corpus_k{k}_t{t or 'NA'}_b{b or 'NA'}_th{thr or 'NA'}.csv"
-                        )
-
                         # Run the executable
                         result = run_corpus_mode(exec_path, dataset_dir,
-                                                 output_file, k, t, b, thr)
+                                                output_dir, k, t, b, thr)
 
-                        # Parse the output
-                        parsed_result = parse_corpus_output(result)
-
-                        # Add method and parameter info
-                        parsed_result['method'] = exec_name
-                        parsed_result['k'] = k
-                        parsed_result['t'] = t
-                        parsed_result['b'] = b
-                        parsed_result['thr'] = thr
+                        # Parse the CSV results
+                        parsed_result = parse_csv_results(result)
 
                         # For CSV export, convert similar_pairs to count
                         parsed_result['similar_pairs_count'] = len(
@@ -221,93 +241,6 @@ def run_corpus_experiment(executables, dataset_dir, output_dir, k_values,
 
     # Create a DataFrame with the results
     df = pd.DataFrame(results)
-
-    # # Reformat the DataFrame for better CSV export
-    # csv_df = pd.DataFrame({
-    #     'method': df['method'],
-    #     'k': df['k'],
-    #     't': df['t'],
-    #     'b': df['b'],
-    #     'thr': df['thr'],
-    #     'similar_pairs_count': df['similar_pairs_count'],
-    #     'index_build_time': df['index_build_time'],
-    #     'query_time': df['query_time'],
-    #     'total_runtime': df['total_runtime'],
-    #     'status': df['status']
-    # })
-
-    # # Save all results
-    # csv_df.to_csv(os.path.join(output_dir, "corpus_all_results.csv"),
-    #               index=False)
-
-    # # Save summary results by method
-    # summary_by_method = csv_df.groupby('method').agg({
-    #     'index_build_time': ['mean', 'min', 'max'],
-    #     'query_time': ['mean', 'min', 'max'],
-    #     'similar_pairs_count': ['mean', 'min', 'max'],
-    #     'total_runtime': ['mean', 'min', 'max']
-    # }).reset_index()
-    # summary_by_method.columns = [
-    #     '_'.join(col).strip('_') for col in summary_by_method.columns.values
-    # ]
-    # summary_by_method.to_csv(os.path.join(output_dir, "summary_by_method.csv"),
-    #                          index=False)
-
-    # # Save summary by k parameter
-    # summary_by_k = csv_df.groupby(['method', 'k']).agg({
-    #     'index_build_time': 'mean',
-    #     'query_time': 'mean',
-    #     'similar_pairs_count': 'mean',
-    #     'total_runtime': 'mean'
-    # }).reset_index()
-    # summary_by_k.to_csv(os.path.join(output_dir, "summary_by_k.csv"),
-    #                     index=False)
-
-    # # Save summary by t parameter (for applicable methods)
-    # t_methods = csv_df[csv_df['t'].notna()]
-    # if not t_methods.empty:
-    #     summary_by_t = t_methods.groupby(['method', 't']).agg({
-    #         'index_build_time':
-    #         'mean',
-    #         'query_time':
-    #         'mean',
-    #         'similar_pairs_count':
-    #         'mean',
-    #         'total_runtime':
-    #         'mean'
-    #     }).reset_index()
-    #     summary_by_t.to_csv(os.path.join(output_dir, "summary_by_t.csv"),
-    #                         index=False)
-
-    # # Save summary by b parameter (for LSH methods)
-    # b_methods = csv_df[csv_df['b'].notna()]
-    # if not b_methods.empty:
-    #     summary_by_b = b_methods.groupby(['method', 'b']).agg({
-    #         'index_build_time':
-    #         'mean',
-    #         'query_time':
-    #         'mean',
-    #         'similar_pairs_count':
-    #         'mean',
-    #         'total_runtime':
-    #         'mean'
-    #     }).reset_index()
-    #     summary_by_b.to_csv(os.path.join(output_dir, "summary_by_b.csv"),
-    #                         index=False)
-
-    # # Save summary by thr (for applicable methods)
-    # thr_methods = csv_df[csv_df['thr'].notna()]
-    # if not thr_methods.empty:
-    #     summary_by_thr = thr_methods.groupby(
-    #         ['method', 'thr']).agg({
-    #             'index_build_time': 'mean',
-    #             'query_time': 'mean',
-    #             'similar_pairs_count': 'mean',
-    #             'total_runtime': 'mean'
-    #         }).reset_index()
-    #     summary_by_thr.to_csv(os.path.join(output_dir,
-    #                                              "summary_by_thr.csv"),
-    #                                 index=False)
 
     return df
 
@@ -606,15 +539,14 @@ def prepare_datasets(mode, num_docs):
         end_time = time.time()
 
         # Get the directory path from stdout
-        output_dir = result.stdout.strip()
+        # TODO: si quereis que no se imprima todos los archivos creados del exp1 y exp2 :: output_dir = result.stdout.strip()
 
         # Log the run
         logging.info(
-            f"Successfully ran dataset generation and created {output_dir} containing {num_docs} documents"
+            f"Successfully ran dataset generation and created dataset containing {num_docs} documents"
         )
 
         return {
-            "dataset": output_dir,
             "output": result.stdout,
             "runtime": end_time - start_time,
             "status": "success",

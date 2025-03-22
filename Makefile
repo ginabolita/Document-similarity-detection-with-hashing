@@ -41,10 +41,9 @@ clean:
 	rm -f $(OUTDIR)/* deps/xxhash/xxhash.o
 
 distclean: clean
-	rm -f results/virtual/corpus/* datasets/real/* datasets/virtual/* logs/*
+	rm -rf results/virtual/corpus/* datasets/real/* datasets/virtual/* logs/* results/*
 
 ultraclean: distclean
-	rm -rf results datasets logs
 	rm -rf deps $(OUTDIR)
 
 .PHONY: all clean distclean ultraclean check-dependencies

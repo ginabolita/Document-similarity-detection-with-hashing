@@ -8,7 +8,6 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
-
 #include "deps/nlohmann/json.hpp"
 
 using namespace std;

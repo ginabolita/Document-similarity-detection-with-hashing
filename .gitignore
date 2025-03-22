@@ -26,6 +26,7 @@ CMakeFiles/
 cmake_install.cmake
 build/
 
+
 # Temporary files
 *.bak
 *.swp
@@ -41,3 +42,8 @@ bin/
 *.bin
 *.app
 *.dSYM/
+executables/
+datasets/
+logs/
+results/
+*.csv

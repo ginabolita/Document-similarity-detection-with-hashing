@@ -594,7 +594,7 @@ int main(int argc, char *argv[])
 
   // Generate filenames for results
   stringstream ss;
-  ss << "results/" << category << "/LSHbase/LSHResults_k" << k
+  ss << "results/" << category << "/LSHbase/LSHbaseResults_k" << k
      << "_t" << numHashFunctions
      << "_b" << b
      << ".csv";
@@ -603,7 +603,7 @@ int main(int argc, char *argv[])
 
   // Generate filename for time results
   stringstream ss2;
-  ss2 << "results/" << category << "/LSHbase/LSHTimes_k" << k
+  ss2 << "results/" << category << "/LSHbase/LSHbaseTimes_k" << k
       << "_t" << numHashFunctions
       << "_b" << b
       << ".csv";
