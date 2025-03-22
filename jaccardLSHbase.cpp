@@ -607,7 +607,7 @@ int main(int argc, char *argv[])
 
   // Generate filenames for results
   stringstream ss;
-  ss << "results/" << category << "/LSHbase/LSHbaseResults_k" << k
+  ss << "results/" << category << "/LSHbase/LSHbaseSimilarity_k" << k
      << "_t" << numHashFunctions
      << "_b" << b
      << ".csv";
