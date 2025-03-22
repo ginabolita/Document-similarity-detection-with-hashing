@@ -34,6 +34,7 @@ build/
 # Dependencies
 lib/
 deps/
+venv/
 
 # Other
 bin/

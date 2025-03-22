@@ -31,26 +31,27 @@ def run_corpus_mode(executable_path,
                     k=None,
                     t=None,
                     b=None,
-                    threshold=None):
+                    thr=None):
     """Run corpus mode experiment"""
     cmd = [executable_path, dataset_path]
 
     # Handle specific parameter requirements for LSH bucketing and forest
     if 'lsh_bucketing' in executable_path or 'lsh_forest' in executable_path:
-        if k is None or t is None or b is None or threshold is None:
+        if k is None or t is None or b is None or thr is None:
             logging.error(
-                f"Error: {executable_path} requires k, t, b, and threshold parameters."
+                f"Error: {executable_path} requires k, t, b, and thr parameters."
             )
             return {
                 'dataset': dataset_path,
                 'output':
-                f"Error: {executable_path} requires k, t, b, and threshold parameters.",
+                f"Error: {executable_path} requires k, t, b, and thr parameters.",
                 'runtime': None,
                 'status': 'error'
             }
         # Add parameters in the required order
-        #PARA PONER T Y THRESHOLD AQUI
-        cmd.extend([str(k), str(b)]);#, str(t), str(threshold)])
+        #PARA PONER T Y thr AQUI
+        cmd.extend([str(k), str(b)])
+        #, str(t), str(thr)])
     else:
         # Add parameters if provided for other executables
         if k is not None:
@@ -59,8 +60,8 @@ def run_corpus_mode(executable_path,
             cmd.append(str(t))
         if b is not None:
             cmd.append(str(b))
-        if threshold is not None:
-            cmd.append(str(threshold))
+        if thr is not None:
+            cmd.append(str(thr))
 
     # Fix: Don't include redirection in the command list
     command_str = " ".join(cmd) + " > " + output_file
@@ -173,7 +174,7 @@ def parse_corpus_output(result):
 
 
 def run_corpus_experiment(executables, dataset_dir, output_dir, k_values,
-                          t_values, b_values, threshold_values):
+                          t_values, b_values, thr_values):
     """Run corpus mode experiments"""
     results = []
 
@@ -183,7 +184,7 @@ def run_corpus_experiment(executables, dataset_dir, output_dir, k_values,
 
         # Filter parameter values based on algorithm type
         b_values_filtered = b_values if 'lsh' in exec_name else [None]
-        threshold_values_filtered = threshold_values if exec_name not in [
+        thr_values_filtered = thr_values if exec_name not in [
             'minhash', 'lsh_basic', 'brute_force'
         ] else [None]
         t_values_filtered = t_values if exec_name != 'brute_force' else [None]
@@ -192,16 +193,15 @@ def run_corpus_experiment(executables, dataset_dir, output_dir, k_values,
         for k in k_values:
             for t in t_values_filtered:
                 for b in b_values_filtered:
-                    for threshold in threshold_values_filtered:
+                    for thr in thr_values_filtered:
                         output_file = os.path.join(
                             output_dir,
-                            f"{exec_name}_corpus_k{k}_t{t or 'NA'}_b{b or 'NA'}_th{threshold or 'NA'}.csv"
+                            f"{exec_name}_corpus_k{k}_t{t or 'NA'}_b{b or 'NA'}_th{thr or 'NA'}.csv"
                         )
 
                         # Run the executable
                         result = run_corpus_mode(exec_path, dataset_dir,
-                                                 output_file, k, t, b,
-                                                 threshold)
+                                                 output_file, k, t, b, thr)
 
                         # Parse the output
                         parsed_result = parse_corpus_output(result)
@@ -211,7 +211,7 @@ def run_corpus_experiment(executables, dataset_dir, output_dir, k_values,
                         parsed_result['k'] = k
                         parsed_result['t'] = t
                         parsed_result['b'] = b
-                        parsed_result['threshold'] = threshold
+                        parsed_result['thr'] = thr
 
                         # For CSV export, convert similar_pairs to count
                         parsed_result['similar_pairs_count'] = len(
@@ -222,92 +222,92 @@ def run_corpus_experiment(executables, dataset_dir, output_dir, k_values,
     # Create a DataFrame with the results
     df = pd.DataFrame(results)
 
-    # Reformat the DataFrame for better CSV export
-    csv_df = pd.DataFrame({
-        'method': df['method'],
-        'k': df['k'],
-        't': df['t'],
-        'b': df['b'],
-        'threshold': df['threshold'],
-        'similar_pairs_count': df['similar_pairs_count'],
-        'index_build_time': df['index_build_time'],
-        'query_time': df['query_time'],
-        'total_runtime': df['total_runtime'],
-        'status': df['status']
-    })
+    # # Reformat the DataFrame for better CSV export
+    # csv_df = pd.DataFrame({
+    #     'method': df['method'],
+    #     'k': df['k'],
+    #     't': df['t'],
+    #     'b': df['b'],
+    #     'thr': df['thr'],
+    #     'similar_pairs_count': df['similar_pairs_count'],
+    #     'index_build_time': df['index_build_time'],
+    #     'query_time': df['query_time'],
+    #     'total_runtime': df['total_runtime'],
+    #     'status': df['status']
+    # })
 
-    # Save all results
-    csv_df.to_csv(os.path.join(output_dir, "corpus_all_results.csv"),
-                  index=False)
+    # # Save all results
+    # csv_df.to_csv(os.path.join(output_dir, "corpus_all_results.csv"),
+    #               index=False)
 
-    # Save summary results by method
-    summary_by_method = csv_df.groupby('method').agg({
-        'index_build_time': ['mean', 'min', 'max'],
-        'query_time': ['mean', 'min', 'max'],
-        'similar_pairs_count': ['mean', 'min', 'max'],
-        'total_runtime': ['mean', 'min', 'max']
-    }).reset_index()
-    summary_by_method.columns = [
-        '_'.join(col).strip('_') for col in summary_by_method.columns.values
-    ]
-    summary_by_method.to_csv(os.path.join(output_dir, "summary_by_method.csv"),
-                             index=False)
+    # # Save summary results by method
+    # summary_by_method = csv_df.groupby('method').agg({
+    #     'index_build_time': ['mean', 'min', 'max'],
+    #     'query_time': ['mean', 'min', 'max'],
+    #     'similar_pairs_count': ['mean', 'min', 'max'],
+    #     'total_runtime': ['mean', 'min', 'max']
+    # }).reset_index()
+    # summary_by_method.columns = [
+    #     '_'.join(col).strip('_') for col in summary_by_method.columns.values
+    # ]
+    # summary_by_method.to_csv(os.path.join(output_dir, "summary_by_method.csv"),
+    #                          index=False)
 
-    # Save summary by k parameter
-    summary_by_k = csv_df.groupby(['method', 'k']).agg({
-        'index_build_time': 'mean',
-        'query_time': 'mean',
-        'similar_pairs_count': 'mean',
-        'total_runtime': 'mean'
-    }).reset_index()
-    summary_by_k.to_csv(os.path.join(output_dir, "summary_by_k.csv"),
-                        index=False)
+    # # Save summary by k parameter
+    # summary_by_k = csv_df.groupby(['method', 'k']).agg({
+    #     'index_build_time': 'mean',
+    #     'query_time': 'mean',
+    #     'similar_pairs_count': 'mean',
+    #     'total_runtime': 'mean'
+    # }).reset_index()
+    # summary_by_k.to_csv(os.path.join(output_dir, "summary_by_k.csv"),
+    #                     index=False)
 
-    # Save summary by t parameter (for applicable methods)
-    t_methods = csv_df[csv_df['t'].notna()]
-    if not t_methods.empty:
-        summary_by_t = t_methods.groupby(['method', 't']).agg({
-            'index_build_time':
-            'mean',
-            'query_time':
-            'mean',
-            'similar_pairs_count':
-            'mean',
-            'total_runtime':
-            'mean'
-        }).reset_index()
-        summary_by_t.to_csv(os.path.join(output_dir, "summary_by_t.csv"),
-                            index=False)
+    # # Save summary by t parameter (for applicable methods)
+    # t_methods = csv_df[csv_df['t'].notna()]
+    # if not t_methods.empty:
+    #     summary_by_t = t_methods.groupby(['method', 't']).agg({
+    #         'index_build_time':
+    #         'mean',
+    #         'query_time':
+    #         'mean',
+    #         'similar_pairs_count':
+    #         'mean',
+    #         'total_runtime':
+    #         'mean'
+    #     }).reset_index()
+    #     summary_by_t.to_csv(os.path.join(output_dir, "summary_by_t.csv"),
+    #                         index=False)
 
-    # Save summary by b parameter (for LSH methods)
-    b_methods = csv_df[csv_df['b'].notna()]
-    if not b_methods.empty:
-        summary_by_b = b_methods.groupby(['method', 'b']).agg({
-            'index_build_time':
-            'mean',
-            'query_time':
-            'mean',
-            'similar_pairs_count':
-            'mean',
-            'total_runtime':
-            'mean'
-        }).reset_index()
-        summary_by_b.to_csv(os.path.join(output_dir, "summary_by_b.csv"),
-                            index=False)
+    # # Save summary by b parameter (for LSH methods)
+    # b_methods = csv_df[csv_df['b'].notna()]
+    # if not b_methods.empty:
+    #     summary_by_b = b_methods.groupby(['method', 'b']).agg({
+    #         'index_build_time':
+    #         'mean',
+    #         'query_time':
+    #         'mean',
+    #         'similar_pairs_count':
+    #         'mean',
+    #         'total_runtime':
+    #         'mean'
+    #     }).reset_index()
+    #     summary_by_b.to_csv(os.path.join(output_dir, "summary_by_b.csv"),
+    #                         index=False)
 
-    # Save summary by threshold (for applicable methods)
-    threshold_methods = csv_df[csv_df['threshold'].notna()]
-    if not threshold_methods.empty:
-        summary_by_threshold = threshold_methods.groupby(
-            ['method', 'threshold']).agg({
-                'index_build_time': 'mean',
-                'query_time': 'mean',
-                'similar_pairs_count': 'mean',
-                'total_runtime': 'mean'
-            }).reset_index()
-        summary_by_threshold.to_csv(os.path.join(output_dir,
-                                                 "summary_by_threshold.csv"),
-                                    index=False)
+    # # Save summary by thr (for applicable methods)
+    # thr_methods = csv_df[csv_df['thr'].notna()]
+    # if not thr_methods.empty:
+    #     summary_by_thr = thr_methods.groupby(
+    #         ['method', 'thr']).agg({
+    #             'index_build_time': 'mean',
+    #             'query_time': 'mean',
+    #             'similar_pairs_count': 'mean',
+    #             'total_runtime': 'mean'
+    #         }).reset_index()
+    #     summary_by_thr.to_csv(os.path.join(output_dir,
+    #                                              "summary_by_thr.csv"),
+    #                                 index=False)
 
     return df
 
@@ -395,34 +395,34 @@ def visualize_corpus_results(results_df, output_dir):
     plt.grid(True)
     plt.savefig(os.path.join(output_dir, "query_time_vs_b.png"))
 
-    # Add a new plot for threshold parameter
+    # Add a new plot for thr parameter
     plt.figure(figsize=(12, 8))
 
     for method, group in results_df.groupby('method'):
-        if 'threshold' in group.columns:
-            threshold_values = []
+        if 'thr' in group.columns:
+            thr_values = []
             similar_pairs_counts = []
 
-            for threshold, th_group in group.groupby('threshold'):
-                if pd.notna(threshold):
-                    threshold_values.append(threshold)
+            for thr, th_group in group.groupby('thr'):
+                if pd.notna(thr):
+                    thr_values.append(thr)
                     # Count the number of similar pairs
                     similar_pairs_count = th_group['similar_pairs_count'].mean(
                     )
                     similar_pairs_counts.append(similar_pairs_count)
 
-            if threshold_values and similar_pairs_counts:
-                plt.plot(threshold_values,
+            if thr_values and similar_pairs_counts:
+                plt.plot(thr_values,
                          similar_pairs_counts,
                          marker='o',
                          label=method)
 
-    plt.title("Average Number of Similar Pairs vs. Threshold")
-    plt.xlabel("Similarity Threshold")
+    plt.title("Average Number of Similar Pairs vs. thr")
+    plt.xlabel("Similarity thr")
     plt.ylabel("Number of Similar Pairs")
     plt.legend()
     plt.grid(True)
-    plt.savefig(os.path.join(output_dir, "similar_pairs_vs_threshold.png"))
+    plt.savefig(os.path.join(output_dir, "similar_pairs_vs_thr.png"))
 
 
 def generate_report(corpus_results, output_dir):
@@ -500,15 +500,15 @@ def generate_report(corpus_results, output_dir):
                                     f"    b={b}: Average query time = {avg_query_time:.6f} seconds\n"
                                 )
 
-                if 'threshold' in group.columns:
-                    for threshold, th_group in group.groupby('threshold'):
-                        if pd.notna(threshold):
+                if 'thr' in group.columns:
+                    for thr, th_group in group.groupby('thr'):
+                        if pd.notna(thr):
                             similar_pairs_counts = th_group[
                                 'similar_pairs_count']
                             if not similar_pairs_counts.empty:
                                 avg_similar_pairs = similar_pairs_counts.mean()
                                 f.write(
-                                    f"    threshold={threshold}: Average similar pairs found = {avg_similar_pairs:.2f}\n"
+                                    f"    thr={thr}: Average similar pairs found = {avg_similar_pairs:.2f}\n"
                                 )
 
                 f.write("\n")
@@ -547,7 +547,7 @@ def generate_report(corpus_results, output_dir):
             if any('lsh' in method
                    for method in corpus_results['method'].unique()):
                 f.write(
-                    "  - LSH parameters (b, threshold) offer a trade-off between speed and accuracy\n"
+                    "  - LSH parameters (b, thr) offer a trade-off between speed and accuracy\n"
                 )
 
         f.write("\n")
@@ -566,9 +566,7 @@ def generate_report(corpus_results, output_dir):
             f.write(
                 "  - For LSH, increase b for better accuracy at the cost of performance\n"
             )
-            f.write(
-                "  - Choose threshold based on the specific application needs\n"
-            )
+            f.write("  - Choose thr based on the specific application needs\n")
         f.write("\n")
 
         # Conclusion
@@ -642,22 +640,22 @@ def main():
                         nargs='+',
                         type=int,
                         help='List of k values to test',
-                        default=list(range(1,15)))
+                        default=[3, 5, 7])
     parser.add_argument('--t_values',
                         nargs='+',
                         type=int,
                         help='List of t values to test',
-                        default=list(range(100, 1001, 100)))
+                        default=[10, 100, 1000])
     parser.add_argument('--b_values',
                         nargs='+',
                         type=int,
                         help='List of b values to test',
-                        default=list(range(10, 100, 10)))
-    parser.add_argument('--threshold_values',
+                        default=[5, 10, 20, 50, 100])
+    parser.add_argument('--thr_values',
                         nargs='+',
                         type=float,
                         default=[0.5, 0.6, 0.7, 0.8, 0.9],
-                        help='List of threshold values to test')
+                        help='List of thr values to test')
     parser.add_argument('--num_docs',
                         type=int,
                         default=20,
@@ -686,14 +684,14 @@ def main():
     }
 
     dataset_dir = os.path.join('datasets', args.mode)
-    output_dir = os.path.join('results', args.mode)
+    output_dir = os.path.join('results', args.mode, 'corpus')
     os.makedirs(output_dir, exist_ok=True)
 
     logging.info("Running corpus experiments...")
     corpus_results = run_corpus_experiment(executables, dataset_dir,
                                            output_dir, args.k_values,
                                            args.t_values, args.b_values,
-                                           args.threshold_values)
+                                           args.thr_values)
 
     visualize_corpus_results(corpus_results, output_dir)
     generate_report(corpus_results, output_dir)
