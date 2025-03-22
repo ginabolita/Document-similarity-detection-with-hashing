@@ -84,14 +84,14 @@ public:
 // extractNumber function to extract document number from filename
 int extractNumber(const std::string &filename)
 {
-    std::regex pattern1(R"(docExp1_(\d+)\.txt)");
-    std::regex pattern2(R"(docExp2_(\d+)\.txt)");
-    std::smatch match;
-    if (std::regex_search(filename, match, pattern1) or std::regex_search(filename, match, pattern2))
-    {
-        return std::stoi(match[1]);
-    }
-    return -1; // Si no se encuentra un número, devuelve -1 o maneja el error como prefieras
+	std::regex pattern1(R"(docExp1_(\d+)\.txt)");
+	std::regex pattern2(R"(docExp2_(\d+)\.txt)");
+	std::smatch match;
+	if (std::regex_search(filename, match, pattern1) or std::regex_search(filename, match, pattern2))
+	{
+		return std::stoi(match[1]);
+	}
+	return -1; // Si no se encuentra un número, devuelve -1 o maneja el error como prefieras
 }
 
 // Initialize LSH Forest (replaces initializeLSHBuckets)
@@ -507,17 +507,6 @@ void cleanupLSHForest()
 	lshForest.clear();
 }
 
-//---------------------------------------------------------------------------
-// Main
-//---------------------------------------------------------------------------
-void printUsage(const char *programName)
-{
-	cout << "1. Compare two files: " << programName << " <file1> <file2> <k> <b> <t> <sim_threshold>" << endl;
-	cout << "2. Compare one file with corpus: " << programName << " <file> <corpus_dir> <k> <b> <t> <sim_threshold>" << endl;
-	cout << "3. Compare all files in corpus: " << programName << " <corpus_dir> <k> <b> <t> <sim_threshold>" << endl;
-	cout << "where k is the shingle size, b is the number of bands and t the number of hash functions" << endl;
-}
-
 // Function to write similarity results to CSV
 void writeResultsToCSV(const string &filename1,
 					   const string &filename2,
@@ -576,7 +565,6 @@ void writeResultsToCSV(const string &filename1,
 			documents[pair.first].signature,
 			documents[pair.second].signature);
 
-
 		// Write to CSV with fixed precision
 		file << id1 << ","
 			 << id2 << ","
@@ -602,7 +590,7 @@ void writeResultsToCSV(const string &filename1,
 
 	// Write header
 	fileTime << "Operation,Time(ms)" << endl;
-	
+
 	for (const auto &pair : timeResults)
 	{
 		fileTime << pair.first << "," << pair.second << endl;
@@ -610,6 +598,30 @@ void writeResultsToCSV(const string &filename1,
 
 	fileTime.close();
 	cout << "Results written to " << csvFilename << endl;
+}
+
+//---------------------------------------------------------------------------
+// Main
+//---------------------------------------------------------------------------
+void printUsage(const char *programName)
+{
+	cout << "1. Compare two files: " << programName << " <file1> <file2> <k> <b> <t> <sim_threshold>" << endl;
+	cout << "2. Compare one file with corpus: " << programName << " <file> <corpus_dir> <k> <b> <t> <sim_threshold>" << endl;
+	cout << "3. Compare all files in corpus: " << programName << " <corpus_dir> <k> <b> <t> <sim_threshold>" << endl;
+	cout << "where k is the shingle size, b is the number of bands and t the number of hash functions" << endl;
+}
+
+std::string determineCategory(const std::string &inputDirectory)
+{
+	if (inputDirectory.find("real") != std::string::npos)
+	{
+		return "real";
+	}
+	else if (inputDirectory.find("virtual") != std::string::npos)
+	{
+		return "virtual";
+	}
+	return "unknown"; // Fallback case
 }
 
 int main(int argc, char *argv[])
@@ -761,27 +773,34 @@ int main(int argc, char *argv[])
 			similarPairs = queryLSHForest(documents, b);
 		}
 
+		std::string category = determineCategory(argv[1]);
+
+		// Ensure the category is valid
+		if (category == "unknown") {
+			std::cerr << "Warning: Could not determine category from input directory!" << std::endl;
+			return 1;
+		}
+
 		// Report results
 		// cout << "\nFound " << similarPairs.size() << " similar document pairs:" << endl;
-		    // Construct filename using a stringstream
-			std::stringstream ss;
-			ss << "forestSimilarities_k" << k 
-			   << "_t" << t 
-			   << "_b" << b 
-			   << "_threshold_" << SIMILARITY_THRESHOLD << ".csv";
-		
-			std::string filename1 = ss.str();
-			
-			// Generate the second filename with the same structure (e.g., for time measurements)
-			std::stringstream ss2;
-			ss2 << "forestTimes_k" << k 
-				<< "_t" << t 
-				<< "_b" << b 
-				<< "_threshold_" << SIMILARITY_THRESHOLD << ".csv";
-		
-			std::string filename2 = ss2.str();
-		writeResultsToCSV(filename1, filename2, similarPairs, documents);
+		// Construct filename using a stringstream
+		std::stringstream ss;
+		ss << "results/" << category << "/forestSimilarities_k" << k
+		   << "_t" << t
+		   << "_b" << b
+		   << "_threshold_" << SIMILARITY_THRESHOLD << ".csv";
 
+		std::string filename1 = ss.str();
+
+		// Generate the second filename with the same structure (e.g., for time measurements)
+		std::stringstream ss2;
+		ss2 << "results/" << category << "/forestTimes_k" << k
+			<< "_t" << t
+			<< "_b" << b
+			<< "_threshold_" << SIMILARITY_THRESHOLD << ".csv";
+
+		std::string filename2 = ss2.str();
+		writeResultsToCSV(filename1, filename2, similarPairs, documents);
 	}
 	/*
 	else if (singleVsCorpusMode)

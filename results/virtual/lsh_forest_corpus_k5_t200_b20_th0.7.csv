@@ -1,7 +1,0 @@
-Using 200 bands with threshold 0.7
-
-Format: 
-doc1 | doc2 | estimated_similarity | exact_similarity
-Initializing LSH Forest with 200 trees
-Results written to SimilarityResults.csv
-time: 66 ms

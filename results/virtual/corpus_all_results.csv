@@ -1,6 +1,0 @@
-method,k,t,b,threshold,similar_pairs_count,index_build_time,query_time,total_runtime,status
-brute_force,5,,,,0,,,1.28633451461792,success
-minhash,5,200.0,,,0,,,0.15276217460632324,success
-lsh_basic,5,200.0,20.0,,0,,,0.17374825477600098,success
-lsh_bucketing,5,200.0,20.0,0.7,0,,,0.07787013053894043,success
-lsh_forest,5,200.0,20.0,0.7,0,,,0.09000468254089355,success

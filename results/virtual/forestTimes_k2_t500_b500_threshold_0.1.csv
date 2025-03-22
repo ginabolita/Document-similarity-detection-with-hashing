@@ -1,5 +1,5 @@
 Operation,Time(ms)
-Finding similar documents,6
+Finding similar documents,7
 Initialize hash functions,0
 LSH Bucketing,1
-Processing corpus,84
+Processing corpus,101

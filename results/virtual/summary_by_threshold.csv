@@ -1,3 +1,0 @@
-method,threshold,index_build_time,query_time,similar_pairs_count,total_runtime
-lsh_bucketing,0.7,,,0.0,0.07787013053894043
-lsh_forest,0.7,,,0.0,0.09000468254089355
