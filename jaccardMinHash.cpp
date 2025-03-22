@@ -26,9 +26,10 @@ unordered_set<string> stopwords;         // Stopwords
 
 int extractNumber(const std::string &filename)
 {
-    std::regex pattern(R"(docExp2_(\d+)\.txt)");
+    std::regex pattern1(R"(docExp1_(\d+)\.txt)");
+    std::regex pattern2(R"(docExp2_(\d+)\.txt)");
     std::smatch match;
-    if (std::regex_search(filename, match, pattern))
+    if (std::regex_search(filename, match, pattern1) or std::regex_search(filename, match, pattern2))
     {
         return std::stoi(match[1]);
     }
