@@ -24,6 +24,37 @@ vector<pair<int, int>> hashCoefficients; // [a, b] for hash function(x) = (ax + 
 int p;                                   // Prime number for hash functions
 unordered_set<string> stopwords;         // Stopwords
 vector<vector<float>> Data;
+map<string, int> timeResults; // Map to store execution times
+
+// Struct to hold similarity results
+struct SimilarityResult
+{
+  string file1;
+  string file2;
+  float similarity;
+  bool isSimilar;
+};
+
+// Timer class to measure execution time
+class Timer
+{
+private:
+  chrono::high_resolution_clock::time_point startTime;
+  string operationName;
+
+public:
+  Timer(const string &name) : operationName(name)
+  {
+    startTime = chrono::high_resolution_clock::now();
+  }
+
+  ~Timer()
+  {
+    auto endTime = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();
+    timeResults[operationName] = duration;
+  }
+};
 
 //---------------------------------------------------------------------------
 // Treating StopWords
@@ -246,6 +277,112 @@ float SimilaridadDeJaccard(const vector<int> &signature1,
   return static_cast<float>(iguales) / numHashFunctions;
 }
 
+// Function to extract document number from filename
+int extractNumber(const string &filename)
+{
+  string fname = fs::path(filename).filename().string();
+  // Handle filenames like docExp1_X.txt or docExp2_XX.txt
+  if (fname.size() >= 14) // For double digit numbers
+  {
+    return stoi(string(1, fname[8]) + string(1, fname[9]));
+  }
+  else // For single digit numbers
+  {
+    return stoi(string(1, fname[8]));
+  }
+}
+
+// Function to determine category from directory path
+string determineCategory(const string &inputDirectory)
+{
+  if (inputDirectory.find("real") != string::npos)
+  {
+    return "real";
+  }
+  else if (inputDirectory.find("virtual") != string::npos)
+  {
+    return "virtual";
+  }
+  return "default"; // Default fallback
+}
+
+// Function to write results to a CSV file
+void writeResultsToCSV(const string &filename1,
+                       const string &filename2,
+                       const vector<SimilarityResult> &results)
+{
+  // Ensure filename has .csv extension
+  string csvFilename = filename1;
+  if (csvFilename.substr(csvFilename.length() - 4) != ".csv")
+  {
+    csvFilename += ".csv";
+  }
+
+  // Create directory if it doesn't exist
+  fs::path csvPath(csvFilename);
+  if (!fs::exists(csvPath.parent_path()))
+  {
+    fs::create_directories(csvPath.parent_path());
+  }
+
+  ofstream file(csvFilename);
+  if (!file.is_open())
+  {
+    cerr << "Error: Unable to open file " << csvFilename << " for writing" << endl;
+    return;
+  }
+
+  // Write header
+  file << "Document1,Document2,Similarity,IsSimilar" << endl;
+
+  // Write data rows
+  for (const auto &result : results)
+  {
+    int docNum1 = extractNumber(result.file1);
+    int docNum2 = extractNumber(result.file2);
+
+    file << docNum1 << ","
+         << docNum2 << ","
+         << fixed << setprecision(6) << result.similarity << ","
+         << (result.isSimilar ? 1 : 0)
+         << endl;
+  }
+
+  file.close();
+
+  // Open new file to store the time results
+  string timeFilename = filename2;
+  if (timeFilename.substr(timeFilename.length() - 4) != ".csv")
+  {
+    timeFilename += ".csv";
+  }
+
+  // Create directory if it doesn't exist
+  fs::path timePath(timeFilename);
+  if (!fs::exists(timePath.parent_path()))
+  {
+    fs::create_directories(timePath.parent_path());
+  }
+
+  ofstream fileTime(timeFilename);
+  if (!fileTime.is_open())
+  {
+    cerr << "Error: Unable to open file " << timeFilename << " for writing" << endl;
+    return;
+  }
+
+  // Write header
+  fileTime << "Operation,Time(ms)" << endl;
+
+  for (const auto &pair : timeResults)
+  {
+    fileTime << pair.first << "," << pair.second << endl;
+  }
+
+  fileTime.close();
+  cout << "Results written to " << csvFilename << endl;
+}
+
 vector<vector<int>> LSH2(const vector<int> &signature1, const int &b)
 {
   // Divide Signature into b sub signatures
@@ -292,55 +429,7 @@ bool LSH(const vector<int> &signature1, const vector<int> &signature2,
   return false;
 }
 
-// Struct to hold similarity results
-struct SimilarityResult
-{
-  string file1;
-  string file2;
-  float similarity;
-  bool isSimilar;
-};
 
-void writeCSV(const string &filename, vector<vector<float>> &data)
-{
-  // Check if the filename already ends with ".csv"
-  string fileWithCSV = filename;
-  if (fileWithCSV.substr(fileWithCSV.size() - 4) != ".csv")
-  {
-    fileWithCSV += ".csv"; // Add ".csv" if not present
-  }
-
-  // Create and open a file
-  ofstream file(fileWithCSV);
-  if (data.empty())
-  {
-    cerr << "No data to write to CSV." << endl;
-    return;
-  }
-
-  if (file.is_open())
-  {
-    // Loop through data and write it to the CSV file
-    for (const auto &row : data)
-    {
-      for (size_t i = 0; i < row.size(); ++i)
-      {
-        file << row[i];
-        if (i < row.size() - 1)
-        {
-          file << ","; // Add comma separator
-        }
-      }
-      file << "\n"; // Newline after each row
-    }
-    file.close(); // Close the file when done
-    cout << "CSV file created successfully: " << fileWithCSV << endl;
-  }
-  else
-  {
-    cerr << "Unable to open file: " << fileWithCSV << endl;
-  }
-}
 
 //---------------------------------------------------------------------------
 // Main
@@ -500,55 +589,29 @@ int main(int argc, char *argv[])
     }
   }
 
-  // Print results
-  // cout << "\nResults:\n" << endl;
-  // cout << "Performed " << totalComparisons << " comparisons, found " << similarFiles << " similar pairs." << endl;
+  // Get category from directory path
+  string category = determineCategory(dirPath);
 
-  // cout << "\nSimilar file pairs:" << endl;
-  for (const auto &result : results)
-  {
-    if (result.isSimilar)
-    {
-      // cout << "Files: " << fs::path(result.file1).filename().string() << " and "
-      //      << fs::path(result.file2).filename().string() << endl;
-      // cout << "  Jaccard similarity: " << result.similarity * 100 << "%" << endl;
-    }
-  }
+  // Generate filenames for results
+  stringstream ss;
+  ss << "results/" << category << "/LSHbase/LSHResults_k" << k
+     << "_t" << numHashFunctions
+     << "_b" << b
+     << ".csv";
 
-  // cout << "\nAll comparisons:" << endl;
-  for (const auto &result : results)
-  {
-    // cout << "Files: " << fs::path(result.file1).filename().string() << " and "
-    //      << fs::path(result.file2).filename().string() << endl;
-    // cout << "  Jaccard similarity: " << result.similarity * 100 << "%" << endl;
-    // cout << "  Similar: " << (result.isSimilar ? "Yes" : "No") << endl;
+  string filename1 = ss.str();
 
-    string d1 = fs::path(result.file1).filename().string();
-    string d2 = fs::path(result.file2).filename().string();
+  // Generate filename for time results
+  stringstream ss2;
+  ss2 << "results/" << category << "/LSHbase/LSHTimes_k" << k
+      << "_t" << numHashFunctions
+      << "_b" << b
+      << ".csv";
 
-    if (d1.size() == 14)
-    {
-      d1 = string(1, d1[8]) + string(1, d1[9]);
-    }
-    else
-      d1 = d1[8];
-    if (d2.size() == 14)
-    {
-      d2 = string(1, d2[8]) + string(1, d2[9]);
-    }
-    else
-      d2 = d2[8];
+  string filename2 = ss2.str();
 
-    /*
-  vector<float> DataToPass = {
-      static_cast<float>(std::stoi(d1)),
-      static_cast<float>(std::stoi(d2)),
-      result.similarity,
-      static_cast<float>(result.isSimilar)};*/
-    cout << static_cast<float>(std::stoi(d1)) << "," << static_cast<float>(std::stoi(d2)) << "," << result.similarity << "," << static_cast<float>(result.isSimilar) << endl;
-    // Data.push_back(DataToPass);
-  }
-  // writeCSV("JaccardLSHresults", Data);
+  // Write results to CSV files
+  writeResultsToCSV(filename1, filename2, results);
 
   // Calculate and display total execution time
   auto endTime = chrono::high_resolution_clock::now();

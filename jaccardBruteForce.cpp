@@ -255,13 +255,13 @@ int main(int argc, char *argv[]) {
   }
 
   std::stringstream ss;
-  ss << "results/" << category << "/bruteForceSimilarities_k" << k << ".csv";
+  ss << "results/" << category << "/bruteForce/bruteForceSimilarities_k" << k << ".csv";
 
   std::string filename1 = ss.str();
 
   // Generate the second filename with the same structure (e.g., for time measurements)
   std::stringstream ss2;
-  ss2 << "results/" << category << "/bruteForceTimes_k" << k << ".csv";
+  ss2 << "results/" << category << "/bruteForce/bruteForceTimes_k" << k << ".csv";
 
   std::string filename2 = ss2.str();
   {

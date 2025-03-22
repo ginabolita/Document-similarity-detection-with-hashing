@@ -530,7 +530,7 @@ int main(int argc, char *argv[])
     }
    
     std::stringstream ss;
-    ss << "results/" << category << "/MinHashSimilarities_k" << k
+    ss << "results/" << category << "/MinHash/MinHashSimilarities_k" << k
        << "_t" << t
        << ".csv";
    
@@ -538,7 +538,7 @@ int main(int argc, char *argv[])
    
     // Generate the second filename with the same structure (e.g., for time measurements)
     std::stringstream ss2;
-    ss2 << "results/" << category << "/basicLSHTimes_k" << k
+    ss2 << "results/" << category << "/MinHash/MinHashTimes_k" << k
       << "_t" << t
       << ".csv";
    
