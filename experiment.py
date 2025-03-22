@@ -194,6 +194,8 @@ def parse_csv_results(result):
                             index_build_time = float(time_value)
                         elif "query" in task.lower() and time_value is not None:
                             query_time = float(time_value)
+                        elif "time" in task.lower() and time_value is not None:
+                            total_runtime = float(time_value)
                     else:
                         logging.error(f"Invalid task name in times CSV: {task}")
             else:
@@ -208,7 +210,7 @@ def parse_csv_results(result):
         'similar_pairs': similar_pairs,
         'index_build_time': index_build_time,
         'query_time': query_time,
-        'total_runtime': result['runtime'],
+        'total_runtime': total_runtime,
         'status': result['status'],
         'method': result['method'],
         'k': result['k'],
@@ -418,7 +420,7 @@ def main():
                                 args.base_k, args.base_t, args.base_b, args.base_thr)
 
     logging.info("Experiments completed successfully.")
-    
+
 
 
 if __name__ == "__main__":

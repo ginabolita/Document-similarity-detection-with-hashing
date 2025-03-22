@@ -36,24 +36,34 @@ struct Document
 };
 
 // Timer class to measure execution time
+// Timer class to measure execution time
 class Timer
 {
 private:
-    chrono::high_resolution_clock::time_point startTime;
-    string operationName;
+  chrono::high_resolution_clock::time_point startTime;
+  string operationName;
 
 public:
-    Timer(const string &name) : operationName(name)
-    {
-        startTime = chrono::high_resolution_clock::now();
-    }
+  Timer(const string &name) : operationName(name)
+  {
+    startTime = chrono::high_resolution_clock::now();
+  }
 
-    ~Timer()
+  ~Timer()
+  {
+    auto endTime = chrono::high_resolution_clock::now();
+    auto duration =
+        chrono::duration_cast<chrono::milliseconds>(endTime - startTime)
+            .count();
+    if (timeResults.count(operationName) == 0)
     {
-        auto endTime = chrono::high_resolution_clock::now();
-        auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();
-        timeResults[operationName] = duration;
+      timeResults[operationName] = duration;
     }
+    else
+    {
+      timeResults[operationName] += duration;
+    }
+  }
 };
 
 int extractNumber(const std::string &filename)

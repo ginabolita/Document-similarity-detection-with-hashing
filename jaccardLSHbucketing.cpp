@@ -57,22 +57,32 @@ vector<BandBuckets> bandBucketMap;
 // Performance Measurement <- Marcel, el timer para y mide el tiempo
 // automaticamente cuando se destruye
 //---------------------------------------------------------------------------
-class Timer {
- private:
+class Timer
+{
+private:
   chrono::high_resolution_clock::time_point startTime;
   string operationName;
 
- public:
-  Timer(const string &name) : operationName(name) {
+public:
+  Timer(const string &name) : operationName(name)
+  {
     startTime = chrono::high_resolution_clock::now();
   }
 
-  ~Timer() {
+  ~Timer()
+  {
     auto endTime = chrono::high_resolution_clock::now();
     auto duration =
         chrono::duration_cast<chrono::milliseconds>(endTime - startTime)
             .count();
-    timeResults[operationName] = duration;
+    if (timeResults.count(operationName) == 0)
+    {
+      timeResults[operationName] = duration;
+    }
+    else
+    {
+      timeResults[operationName] += duration;
+    }
   }
 };
 
@@ -691,15 +701,17 @@ int main(int argc, char *argv[]) {
   }
 
   // Initialize hash functions - THIS WAS MISSING IN THE ORIGINAL CODE
-  //cout << "Initializing hash functions..." << endl;
-  initializeHashFunctions();
+  {
+    Timer timerHash("index build");
+    initializeHashFunctions();
+  }
   //cout << "Initialized " << hashCoefficients.size() << " hash functions"
    //    << endl;
 
   // Process all files in the corpus directory
   
   {
-    Timer timerProcessCorpus("Processing corpus");
+    Timer timerProcessCorpus("index build");
     //cout << "Processing files in directory: " << corpusDir << endl;
 
     // Count how many files we'll process
@@ -759,13 +771,13 @@ int main(int argc, char *argv[]) {
 
   // Initialize LSH buckets
   {
-    Timer timerInitBuckets("Initializing LSH buckets");
+    Timer timerInitBuckets("index build");
     initializeLSHBuckets(b);
   }
 
   // Add documents to LSH buckets
   {
-    Timer timerLSH("LSH Bucketing");
+    Timer timerLSH("query");
     for (size_t i = 0; i < documents.size(); i++) {
       addToLSHBuckets(documents[i].signature, i, b);
     }
