@@ -1,0 +1,6 @@
+method,k,index_build_time,query_time,similar_pairs_count,total_runtime
+brute_force,5,,,0.0,1.28633451461792
+lsh_basic,5,,,0.0,0.17374825477600098
+lsh_bucketing,5,,,0.0,0.07787013053894043
+lsh_forest,5,,,0.0,0.09000468254089355
+minhash,5,,,0.0,0.15276217460632324

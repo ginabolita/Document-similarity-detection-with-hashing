@@ -1,0 +1,4 @@
+method,b,index_build_time,query_time,similar_pairs_count,total_runtime
+lsh_basic,20.0,,,0.0,0.17374825477600098
+lsh_bucketing,20.0,,,0.0,0.07787013053894043
+lsh_forest,20.0,,,0.0,0.09000468254089355

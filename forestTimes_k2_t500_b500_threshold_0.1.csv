@@ -1,0 +1,5 @@
+Operation,Time(ms)
+Finding similar documents,6
+Initialize hash functions,0
+LSH Bucketing,1
+Processing corpus,84

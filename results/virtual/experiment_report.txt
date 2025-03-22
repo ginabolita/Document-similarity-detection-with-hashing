@@ -1,0 +1,44 @@
+Document Similarity Methods Evaluation Report
+===========================================
+
+Corpus Mode Results
+---------------------
+
+Method Performance Comparison:
+
+Parameter Effects:
+  brute_force:
+
+  lsh_basic:
+
+  lsh_bucketing:
+    threshold=0.7: Average similar pairs found = 0.00
+
+  lsh_forest:
+    threshold=0.7: Average similar pairs found = 0.00
+
+  minhash:
+
+Observations and Recommendations
+---------------------------------
+
+Observations:
+  - Increasing k generally increases index build time
+  - Increasing t affects query time and accuracy
+  - LSH parameters (b, threshold) offer a trade-off between speed and accuracy
+
+Recommendations:
+  - For small document collections, brute force may be sufficient
+  - For large collections, LSH methods offer better scaling
+  - Tune k based on document length and vocabulary diversity
+  - Adjust t to balance accuracy and performance
+  - For LSH, increase b for better accuracy at the cost of performance
+  - Choose threshold based on the specific application needs
+
+Conclusion
+-------------
+
+  The experiments provide a comprehensive evaluation of different Jaccard similarity
+  computation methods. The choice of method and parameters should be based on the
+  specific requirements of the application, particularly the trade-off between
+  accuracy and performance.

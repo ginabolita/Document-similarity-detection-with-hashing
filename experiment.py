@@ -642,17 +642,17 @@ def main():
                         nargs='+',
                         type=int,
                         help='List of k values to test',
-                        default=[3, 5, 7])
+                        default=list(range(1,15)))
     parser.add_argument('--t_values',
                         nargs='+',
                         type=int,
                         help='List of t values to test',
-                        default=[10, 100, 1000])
+                        default=list(range(100, 1001, 100)))
     parser.add_argument('--b_values',
                         nargs='+',
                         type=int,
                         help='List of b values to test',
-                        default=[5, 10, 20, 50, 100])
+                        default=list(range(10, 100, 10)))
     parser.add_argument('--threshold_values',
                         nargs='+',
                         type=float,
@@ -686,7 +686,7 @@ def main():
     }
 
     dataset_dir = os.path.join('datasets', args.mode)
-    output_dir = os.path.join('results', args.mode, 'corpus')
+    output_dir = os.path.join('results', args.mode)
     os.makedirs(output_dir, exist_ok=True)
 
     logging.info("Running corpus experiments...")

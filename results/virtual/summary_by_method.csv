@@ -1,0 +1,6 @@
+method,index_build_time_mean,index_build_time_min,index_build_time_max,query_time_mean,query_time_min,query_time_max,similar_pairs_count_mean,similar_pairs_count_min,similar_pairs_count_max,total_runtime_mean,total_runtime_min,total_runtime_max
+brute_force,,,,,,,0.0,0,0,1.28633451461792,1.28633451461792,1.28633451461792
+lsh_basic,,,,,,,0.0,0,0,0.17374825477600098,0.17374825477600098,0.17374825477600098
+lsh_bucketing,,,,,,,0.0,0,0,0.07787013053894043,0.07787013053894043,0.07787013053894043
+lsh_forest,,,,,,,0.0,0,0,0.09000468254089355,0.09000468254089355,0.09000468254089355
+minhash,,,,,,,0.0,0,0,0.15276217460632324,0.15276217460632324,0.15276217460632324
