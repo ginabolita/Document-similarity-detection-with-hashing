@@ -71,8 +71,8 @@ class Timer {
     auto duration =
         chrono::duration_cast<chrono::milliseconds>(endTime - startTime)
             .count();
-    cout << "[Performance] " << operationName << ": " << duration << " ms"
-         << endl;
+   // cout << "[Performance] " << operationName << ": " << duration << " ms"
+    //     << endl;
   }
 };
 
@@ -338,7 +338,7 @@ size_t hashBand(const vector<int> &band) {
 void initializeLSHBuckets(int numBands) {
   bandBucketMap.clear();
   bandBucketMap.resize(numBands);
-  cout << "Initialized " << numBands << " LSH bands" << endl;
+  //cout << "Initialized " << numBands << " LSH bands" << endl;
 }
 
 // Add a document to LSH buckets
@@ -387,9 +387,9 @@ void addToLSHBuckets(const vector<int> &signature, int docIndex, int numBands) {
 
 vector<pair<int, int>> findSimilarDocumentPairs(
     const vector<Document> &documents, int numBands, float threshold) {
-  cout << "Starting findSimilarDocumentPairs with " << documents.size()
-       << " documents, " << numBands << " bands, threshold " << threshold
-       << endl;
+  //cout << "Starting findSimilarDocumentPairs with " << documents.size()
+  //     << " documents, " << numBands << " bands, threshold " << threshold
+  //     << endl;
 
   // Validate inputs
   if (documents.empty() || numBands <= 0 ||
@@ -417,9 +417,9 @@ vector<pair<int, int>> findSimilarDocumentPairs(
     }
   }
 
-  cout << "LSH stats: " << totalBuckets << " total buckets, " << nonEmptyBuckets
-       << " non-empty buckets, "
-       << "largest bucket has " << maxBucketSize << " documents" << endl;
+  //cout << "LSH stats: " << totalBuckets << " total buckets, " << nonEmptyBuckets
+  //    << " non-empty buckets, "
+  //     << "largest bucket has " << maxBucketSize << " documents" << endl;
 
   // Set to store pairs of similar documents (to avoid duplicates)
   set<pair<int, int>> similarPairsSet;
@@ -461,7 +461,7 @@ vector<pair<int, int>> findSimilarDocumentPairs(
   // Convert set to vector
   vector<pair<int, int>> candidatePairs(similarPairsSet.begin(),
                                         similarPairsSet.end());
-  cout << "Found " << candidatePairs.size() << " candidate pairs" << endl;
+  //cout << "Found " << candidatePairs.size() << " candidate pairs" << endl;
 
   // Filter pairs based on actual similarity
   vector<pair<int, int>> filteredPairs;
@@ -492,6 +492,31 @@ vector<pair<int, int>> findSimilarDocumentPairs(
   }
 
   return filteredPairs;
+}
+
+
+int extractNumber(const std::string& filename) {
+    // Find the last underscore
+    size_t underscorePos = filename.find_last_of('_');
+    if (underscorePos == std::string::npos) {
+        return -1; // No underscore found
+    }
+    
+    // Find the position of the dot after the underscore
+    size_t dotPos = filename.find('.', underscorePos);
+    if (dotPos == std::string::npos) {
+        dotPos = filename.length(); // No dot found, use end of string
+    }
+    
+    // Extract the substring between underscore and dot
+    std::string numberStr = filename.substr(underscorePos + 1, dotPos - underscorePos - 1);
+    
+    // Convert string to integer
+    try {
+        return std::stoi(numberStr);
+    } catch (...) {
+        return -1; // Conversion failed
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -548,25 +573,25 @@ int main(int argc, char *argv[]) {
 
   // Load stopwords - Handle potential missing file gracefully
   try {
-    cout << "Loading stopwords..." << endl;
+    //cout << "Loading stopwords..." << endl;
     stopwords = loadStopwords("stopwords-en.json");
-    cout << "Loaded " << stopwords.size() << " stopwords" << endl;
+    //cout << "Loaded " << stopwords.size() << " stopwords" << endl;
   } catch (const exception &e) {
     cerr << "Warning: Error loading stopwords: " << e.what() << endl;
     // Continue execution even if stopwords can't be loaded
   }
 
   // Initialize hash functions - THIS WAS MISSING IN THE ORIGINAL CODE
-  cout << "Initializing hash functions..." << endl;
+  //cout << "Initializing hash functions..." << endl;
   initializeHashFunctions();
-  cout << "Initialized " << hashCoefficients.size() << " hash functions"
-       << endl;
+  //cout << "Initialized " << hashCoefficients.size() << " hash functions"
+   //    << endl;
 
   // Process all files in the corpus directory
   vector<Document> documents;
   {
     Timer timerProcessCorpus("Processing corpus");
-    cout << "Processing files in directory: " << corpusDir << endl;
+    //cout << "Processing files in directory: " << corpusDir << endl;
 
     // Count how many files we'll process
     int fileCount = 0;
@@ -575,7 +600,7 @@ int main(int argc, char *argv[]) {
         fileCount++;
       }
     }
-    cout << "Found " << fileCount << " files to process" << endl;
+    //cout << "Found " << fileCount << " files to process" << endl;
 
     // Process each file
     int processedCount = 0;
@@ -609,8 +634,8 @@ int main(int argc, char *argv[]) {
         // Progress reporting
         processedCount++;
         if (processedCount % 10 == 0 || processedCount == fileCount) {
-          cout << "Processed " << processedCount << "/" << fileCount << " files"
-               << endl;
+         // cout << "Processed " << processedCount << "/" << fileCount << " files"
+          //     << endl;
         }
       }
     }
@@ -623,7 +648,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  cout << "Successfully processed " << documents.size() << " documents" << endl;
+  //cout << "Successfully processed " << documents.size() << " documents" << endl;
 
   // Initialize LSH buckets
   {
@@ -646,13 +671,11 @@ int main(int argc, char *argv[]) {
   }
 
   // Report results
-  cout << "\nResults: " << endl;
-  cout << "Found " << similarPairs.size() << " similar document pairs" << endl;
-  cout << "\nFormat: " << endl;
-  cout << "doc1 | doc2 | estimated_similarity | exact_similarity" << endl;
-  cout << "--------------------------------------------------------------------"
-          "-----"
-       << endl;
+  //cout << "\nResults: " << endl;
+  //cout << "Found " << similarPairs.size() << " similar document pairs" << endl;
+ // cout << "\nFormat: " << endl;
+  cout << "Doc1,Doc2,estimated_similarity,exact_similarity" << endl;
+
 
   for (const auto &pair : similarPairs) {
     if (pair.first >= static_cast<int>(documents.size()) ||
@@ -667,8 +690,14 @@ int main(int argc, char *argv[]) {
     float exactSimilarity = exactJaccardSimilarity(
         documents[pair.first].kShingles, documents[pair.second].kShingles);
 
-    cout << documents[pair.first].filename << " | "
-         << documents[pair.second].filename << " | " << estSimilarity << " | "
+    string d1 = documents[pair.first].filename;
+    string d2 = documents[pair.second].filename;
+
+    int D1 = extractNumber(d1);
+    int D2 = extractNumber(d2);  
+
+    cout << D1 << ","<< D2 << "," 
+          << estSimilarity << ","
          << exactSimilarity << endl;
   }
 
@@ -676,7 +705,7 @@ int main(int argc, char *argv[]) {
   auto endTime = chrono::high_resolution_clock::now();
   auto duration =
       chrono::duration_cast<chrono::milliseconds>(endTime - startTime);
-  cout << "Total execution time: " << duration.count() << " ms" << endl;
+  cout << "time: " << duration.count() << " ms" << endl;
 
   return 0;
 }
