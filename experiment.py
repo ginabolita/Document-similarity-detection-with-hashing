@@ -4,6 +4,7 @@ import argparse
 import logging
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns 
 import random
 import time
 from itertools import combinations
@@ -550,6 +551,64 @@ def compare_accuracy(results_dfs, output_dir):
     
     return accuracy_df
 
+def create_heatmap(csv_file, output_dir):
+    """
+    Create a heatmap from the similarity CSV file.
+    
+    Args:
+        csv_file: Path to the CSV file containing similarity results.
+        output_dir: Directory to save the heatmap image.
+    """
+    try:
+        # Leer el archivo CSV
+        df = pd.read_csv(csv_file)
+        
+        # Verificar si tiene las columnas necesarias
+        if 'Doc1' not in df.columns or 'Doc2' not in df.columns or 'Sim%' not in df.columns:
+            logging.error(f"El archivo CSV {csv_file} no tiene las columnas requeridas (Doc1, Doc2, Sim%)")
+            return
+            
+        # Extraer información del nombre del archivo para el nombre del heatmap
+        base_filename = os.path.basename(csv_file)
+        # Eliminar la extensión
+        base_name = os.path.splitext(base_filename)[0]
+        # Extraer el tipo de algoritmo (parte antes de "Similarities")
+        algo_type = base_name.split('Similarities')[0] if 'Similarities' in base_name else 'unknown'
+        # Extraer los parámetros si existen (parte después de "Similarities_")
+        params_part = base_name.split('Similarities_')[1] if 'Similarities_' in base_name else ''
+        
+        # Crear un nombre único para el heatmap
+        heatmap_name = f'heatmap_{algo_type}{params_part}.png'
+        
+        # Crear la matriz de similitud
+        # Asegurarse de que Doc1 y Doc2 sean tratados como strings para la creación del pivot
+        df['Doc1'] = df['Doc1'].astype(str)
+        df['Doc2'] = df['Doc2'].astype(str)
+        
+        # Crear la matriz pivot
+        similarity_matrix = pd.pivot_table(df, values='Sim%', index='Doc1', columns='Doc2', fill_value=0)
+        
+        # Crear el heatmap
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(similarity_matrix, annot=False, fmt=".2f", cmap='coolwarm', cbar=True)
+        #poner anot a true si queremos los valores en las casillas (pero mejor que no)
+        # Configurar el título y las etiquetas
+        plt.title(f'Heatmap de Similitud entre Documentos - {algo_type}{" " + params_part if params_part else ""}')
+        plt.xlabel('Doc2')
+        plt.ylabel('Doc1')
+        
+        # Guardar el heatmap
+        heatmap_file = os.path.join(output_dir, heatmap_name)
+        plt.savefig(heatmap_file)
+        plt.close()
+        
+        logging.info(f"Heatmap guardado en {heatmap_file}")
+        return heatmap_file
+    except Exception as e:
+        logging.error(f"Error al crear el heatmap: {e}")
+        return None
+
+
 def analyze_and_visualize_results(mode, experiment_types=['vary_k', 'vary_t', 'vary_b', 'vary_thr']):
     """
     Analyze results from all experiments and generate visualization
@@ -607,10 +666,18 @@ def analyze_and_visualize_results(mode, experiment_types=['vary_k', 'vary_t', 'v
     # Compare accuracy against brute force
     accuracy_df = compare_accuracy(results_dfs, viz_dir)
     
-    # Save summary report
-    create_summary_report(results_dfs, accuracy_df, viz_dir)
+    # Crear heatmaps a partir de los archivos de similitud
+    # Buscar archivos CSV de similitud para cada algoritmo
+    for algo_type in ['bruteForce', 'MinHash', 'LSHbase', 'bucketing', 'forest']:
+        similarity_dir = os.path.join(output_dir, algo_type)
+        if os.path.exists(similarity_dir):
+            # Buscar archivos CSV de similitud
+            similarity_files = [f for f in os.listdir(similarity_dir) if f.endswith('.csv') and 'Similarities' in f]
+            for sim_file in similarity_files:
+                sim_file_path = os.path.join(similarity_dir, sim_file)
+                create_heatmap(sim_file_path, viz_dir)
     
-    logging.info(f"Visualization completed. Results available in {viz_dir}")
+    logging.info(f"Summary report created at {os.path.join(output_dir, 'summary_report.txt')}")
 
 
 def create_summary_report(results_dfs, accuracy_df, output_dir):
