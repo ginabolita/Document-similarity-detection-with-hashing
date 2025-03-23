@@ -452,6 +452,82 @@ def plot_algorithm_comparison(results_dfs, metric_name, output_dir):
     return plot_file
 
 
+# Improved get_precision function with better error handling
+def get_precision(file_path1, file_path2):
+    """
+    Calculate the precision between two similarity CSV files by comparing
+    the similarity values (third column).
+    
+    Args:
+        file_path1: Path to the first CSV file (ground truth)
+        file_path2: Path to the second CSV file (to compare)
+        
+    Returns:
+        float: Average precision value between 0 and 1
+    """
+    try:
+        # Load both CSV files
+        df1 = pd.read_csv(file_path1)
+        df2 = pd.read_csv(file_path2)
+        
+        # Get the column names
+        cols1 = df1.columns.tolist()
+        cols2 = df2.columns.tolist()
+        
+        # Verify we have at least 3 columns in each file
+        if len(cols1) < 3 or len(cols2) < 3:
+            logging.error(f"CSV files don't have enough columns: {file_path1}, {file_path2}")
+            return None
+            
+        # Get the third column (similarity values)
+        sim_col1 = df1.iloc[:, 2]
+        sim_col2 = df2.iloc[:, 2]
+        
+        # Make sure the dataframes are sorted the same way
+        # Sort by first two columns (presumably document IDs)
+        df1 = df1.sort_values(by=[cols1[0], cols1[1]]).reset_index(drop=True)
+        df2 = df2.sort_values(by=[cols2[0], cols2[1]]).reset_index(drop=True)
+        
+        sim_values1 = df1.iloc[:, 2].tolist()
+        sim_values2 = df2.iloc[:, 2].tolist()
+        
+        # Handle length mismatch
+        if len(sim_values1) != len(sim_values2):
+            # Find document pairs present in both files
+            # Create tuple keys from the first two columns (doc IDs)
+            pairs1 = set(zip(df1.iloc[:, 0], df1.iloc[:, 1]))
+            pairs2 = set(zip(df2.iloc[:, 0], df2.iloc[:, 1]))
+            
+            # Get common pairs
+            common_pairs = pairs1.intersection(pairs2)
+            
+            if not common_pairs:
+                logging.warning(f"No common document pairs between {file_path1} and {file_path2}")
+                return None
+                
+            # Extract similarity values for common pairs
+            sim_values1 = []
+            sim_values2 = []
+            
+            for pair in common_pairs:
+                idx1 = df1[(df1.iloc[:, 0] == pair[0]) & (df1.iloc[:, 1] == pair[1])].index[0]
+                idx2 = df2[(df2.iloc[:, 0] == pair[0]) & (df2.iloc[:, 1] == pair[1])].index[0]
+                
+                sim_values1.append(df1.iloc[idx1, 2])
+                sim_values2.append(df2.iloc[idx2, 2])
+        
+        # Calculate precision for each pair
+        precision_values = [1 - abs(v1 - v2) for v1, v2 in zip(sim_values1, sim_values2)]
+        
+        # Calculate average precision
+        avg_precision = sum(precision_values) / len(precision_values) if precision_values else 0
+        
+        return avg_precision
+        
+    except Exception as e:
+        logging.error(f"Error calculating precision between {file_path1} and {file_path2}: {str(e)}")
+        return None
+    
 def compare_accuracy(results_dfs, output_dir):
     """
     Compare accuracy of algorithms against brute force (ground truth)
@@ -547,6 +623,203 @@ def compare_accuracy(results_dfs, output_dir):
         logging.info(f"Accuracy plot saved to {plot_file}")
     
     return accuracy_df
+
+
+def compare_similarity_accuracy(results_dfs, output_dir, mode):
+    """
+    Compare similarity values accuracy of algorithms against brute force (ground truth)
+    using both document pair matching and similarity value precision
+    
+    Args:
+        results_dfs: List of DataFrames with results from different parameter experiments
+        output_dir: Directory to save plots
+        mode: Dataset mode ('real' or 'virtual')
+    """
+    logging.info("Comparing algorithm accuracy against brute force ground truth")
+    
+    # Get all similarity CSV paths for processing
+    all_similarity_csvs = {}
+    for df in results_dfs:
+        for _, row in df.iterrows():
+            if isinstance(row['similarity_csv'], str) and os.path.exists(row['similarity_csv']):
+                method = row['method']
+                param = row['varied_param']
+                value = row['varied_value']
+                
+                if method not in all_similarity_csvs:
+                    all_similarity_csvs[method] = {}
+                
+                if param not in all_similarity_csvs[method]:
+                    all_similarity_csvs[method][param] = {}
+                    
+                all_similarity_csvs[method][param][value] = row['similarity_csv']
+    
+    # 1. First approach: Document pair matching (existing logic)
+    accuracy_results = compare_accuracy(results_dfs, output_dir)
+    
+    # 2. Second approach: Similarity value precision (friend's implementation, improved)
+    similarity_precision_results = []
+    
+    # Process for each parameter type
+    for param in ['k', 't', 'b', 'thr']:
+        # Skip if we don't have this parameter variation
+        if not any(df['varied_param'].eq(param).any() for df in results_dfs):
+            continue
+            
+        # Get the values we tried for this parameter
+        param_df = pd.concat([df[df['varied_param'] == param] for df in results_dfs])
+        values_tried = sorted(param_df['varied_value'].unique())
+        
+        # Skip if no values to process
+        if not values_tried:
+            continue
+            
+        # Setup for storing results
+        minhash_precision = []
+        lsh_base_precision = []
+        lsh_bucketing_precision = []
+        lsh_forest_precision = []
+        
+        for value in values_tried:
+            # Find bruteForce file for this parameter value
+            bf_file = None
+            if param == 'k':
+                # For k parameter, we look for bruteForce with matching k
+                if 'bruteForce' in all_similarity_csvs and param in all_similarity_csvs['bruteForce']:
+                    if value in all_similarity_csvs['bruteForce'][param]:
+                        bf_file = all_similarity_csvs['bruteForce'][param][value]
+            else:
+                # For other parameters, we use the default bruteForce (usually with k=5)
+                default_k = 5
+                if 'bruteForce' in all_similarity_csvs and 'k' in all_similarity_csvs['bruteForce']:
+                    if default_k in all_similarity_csvs['bruteForce']['k']:
+                        bf_file = all_similarity_csvs['bruteForce']['k'][default_k]
+                else:
+                    # Fallback to looking for any bruteForce file
+                    bruteforce_files = []
+                    for method_files in all_similarity_csvs.values():
+                        for param_files in method_files.values():
+                            for file in param_files.values():
+                                if 'bruteForce' in file:
+                                    bruteforce_files.append(file)
+                    if bruteforce_files:
+                        bf_file = bruteforce_files[0]
+            
+            # Skip if no bruteForce file found
+            if not bf_file or not os.path.exists(bf_file):
+                logging.warning(f"No bruteForce file found for {param}={value}, skipping precision calculation")
+                continue
+                
+            # Calculate precision for each algorithm
+            for algo, name in [('MinHash', 'minhash_precision'), 
+                              ('LSHbase', 'lsh_base_precision'),
+                              ('bucketing', 'lsh_bucketing_precision'),
+                              ('forest', 'lsh_forest_precision')]:
+                
+                # Find the algorithm file for this parameter value
+                algo_file = None
+                if algo in all_similarity_csvs and param in all_similarity_csvs[algo]:
+                    if value in all_similarity_csvs[algo][param]:
+                        algo_file = all_similarity_csvs[algo][param][value]
+                
+                # Calculate precision if both files exist
+                precision = None
+                if algo_file and os.path.exists(algo_file):
+                    try:
+                        precision = get_precision(bf_file, algo_file)
+                        locals()[name].append(precision)
+                    except Exception as e:
+                        logging.error(f"Error calculating precision for {algo} with {param}={value}: {e}")
+                else:
+                    # Add None to maintain alignment with parameter values
+                    locals()[name].append(None)
+        
+        # Create precision plots
+        plt.figure(figsize=(10, 6))
+        algorithms = []
+        
+        for algo_name, precision_values, color, marker in [
+            ('MinHash', minhash_precision, 'blue', 'o'),
+            ('LSH Basic', lsh_base_precision, 'green', 's'),
+            ('LSH Bucketing', lsh_bucketing_precision, 'red', '^'),
+            ('LSH Forest', lsh_forest_precision, 'purple', 'D')
+        ]:
+            # Only plot if we have values
+            if precision_values and any(v is not None for v in precision_values):
+                valid_indices = [i for i, v in enumerate(precision_values) if v is not None]
+                valid_values = [precision_values[i] for i in valid_indices]
+                valid_params = [values_tried[i] for i in valid_indices]
+                
+                if valid_values:
+                    plt.plot(valid_params, valid_values, marker=marker, linestyle='-', 
+                             color=color, label=algo_name)
+                    algorithms.append(algo_name)
+                    
+                    # Save the precision values for this algorithm and parameter
+                    for val, prec in zip(valid_params, valid_values):
+                        similarity_precision_results.append({
+                            'method': algo_name,
+                            'varied_param': param,
+                            'varied_value': val,
+                            'similarity_precision': prec
+                        })
+        
+        if algorithms:  # Only save if we have data
+            param_labels = {
+                'k': 'Shingle Size (k)',
+                't': 'Number of Hash Functions (t)',
+                'b': 'Number of Bands (b)',
+                'thr': 'Similarity Threshold'
+            }
+            
+            plt.xlabel(param_labels.get(param, param))
+            plt.ylabel('Similarity Precision')
+            plt.title(f'Similarity Value Precision vs {param_labels.get(param, param)}')
+            plt.grid(True, linestyle='--', alpha=0.7)
+            plt.legend()
+            plt.ylim(0, 1.05)
+            
+            # Save the plot
+            plot_file = os.path.join(output_dir, f'similarity_precision_{param}.png')
+            plt.savefig(plot_file)
+            plt.close()
+            
+            logging.info(f"Similarity precision plot saved to {plot_file}")
+    
+    # Create a DataFrame with the precision results
+    if similarity_precision_results:
+        sim_precision_df = pd.DataFrame(similarity_precision_results)
+        precision_csv = os.path.join(output_dir, 'similarity_precision_results.csv')
+        sim_precision_df.to_csv(precision_csv, index=False)
+        logging.info(f"Similarity precision results saved to {precision_csv}")
+        
+        # Create summary plot of average precision by method
+        avg_precision = sim_precision_df.groupby('method')['similarity_precision'].mean().reset_index()
+        
+        plt.figure(figsize=(10, 6))
+        bars = plt.bar(avg_precision['method'], avg_precision['similarity_precision'], color=['blue', 'green', 'red', 'purple'])
+        
+        for bar in bars:
+            height = bar.get_height()
+            plt.text(bar.get_x() + bar.get_width()/2., height + 0.01,
+                    f'{height:.3f}', ha='center', va='bottom')
+        
+        plt.xlabel('Algorithm')
+        plt.ylabel('Average Similarity Precision')
+        plt.title('Average Similarity Precision by Algorithm')
+        plt.ylim(0, 1.05)
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+        
+        # Save the plot
+        avg_plot_file = os.path.join(output_dir, 'avg_similarity_precision.png')
+        plt.savefig(avg_plot_file)
+        plt.close()
+        
+        logging.info(f"Average similarity precision plot saved to {avg_plot_file}")
+        
+        return sim_precision_df
+    
+    return None
 
 def create_heatmap(csv_file, output_dir):
     """
@@ -680,24 +953,37 @@ def analyze_and_visualize_results(mode, experiment_types=['vary_k', 'vary_t', 'v
     for metric in metrics:
         plot_algorithm_comparison(results_dfs, metric, viz_dir)
     
-    # Compare accuracy against brute force
+    # Compare accuracy using both approaches
     accuracy_df = compare_accuracy(results_dfs, viz_dir)
     
-    # Crear heatmaps a partir de los archivos de similitud
-    # Buscar archivos CSV de similitud para cada algoritmo
+    # Use the improved similarity precision comparison (friend's method, enhanced)
+    similarity_precision_df = compare_similarity_accuracy(results_dfs, viz_dir, mode)
+    
+    # Create heatmaps from similarity CSV files
     for algo_type in ['bruteForce', 'MinHash', 'LSHbase', 'bucketing', 'forest']:
         similarity_dir = os.path.join(output_dir, algo_type)
         if os.path.exists(similarity_dir):
-            # Buscar archivos CSV de similitud
+            # Find similarity CSV files
             similarity_files = [f for f in os.listdir(similarity_dir) if f.endswith('.csv') and 'Similarities' in f]
             for sim_file in similarity_files:
                 sim_file_path = os.path.join(similarity_dir, sim_file)
                 create_heatmap(sim_file_path, viz_dir)
     
-    logging.info(f"Summary report created at {os.path.join(output_dir, 'summary_report.txt')}")
+    # Generate a comprehensive summary report
+    create_summary_report(results_dfs, accuracy_df, similarity_precision_df, output_dir)
+    
+    logging.info(f"Analysis and visualization completed. Reports saved to {output_dir}")
 
-def create_summary_report(results_dfs, accuracy_df, output_dir):
-    """Create a summary report with key findings"""
+def create_summary_report(results_dfs, accuracy_df, similarity_precision_df, output_dir):
+    """
+    Create a comprehensive summary report with key findings
+    
+    Args:
+        results_dfs: List of DataFrames with experiment results
+        accuracy_df: DataFrame with document-pair accuracy results
+        similarity_precision_df: DataFrame with similarity value precision results
+        output_dir: Directory to save the report
+    """
     combined_df = pd.concat(results_dfs)
     
     # Group by method and calculate averages
@@ -718,9 +1004,16 @@ def create_summary_report(results_dfs, accuracy_df, output_dir):
     # Calculate average F1 scores if accuracy data is available
     if accuracy_df is not None and not accuracy_df.empty:
         avg_accuracy = accuracy_df.groupby('method')['f1_score'].mean().reset_index()
-        most_accurate_method = avg_accuracy.loc[avg_accuracy['f1_score'].idxmax()]['method']
+        most_accurate_method_f1 = avg_accuracy.loc[avg_accuracy['f1_score'].idxmax()]['method']
     else:
-        most_accurate_method = None
+        most_accurate_method_f1 = None
+        
+    # Calculate average similarity precision if available
+    if similarity_precision_df is not None and not similarity_precision_df.empty:
+        avg_precision = similarity_precision_df.groupby('method')['similarity_precision'].mean().reset_index()
+        most_accurate_method_sim = avg_precision.loc[avg_precision['similarity_precision'].idxmax()]['method']
+    else:
+        most_accurate_method_sim = None
     
     # Create report
     with open(os.path.join(output_dir, 'summary_report.txt'), 'w') as f:
@@ -730,13 +1023,29 @@ def create_summary_report(results_dfs, accuracy_df, output_dir):
         f.write(f"- Fastest method: {fastest_method}\n")
         if most_pairs_method:
             f.write(f"- Method finding most similar pairs: {most_pairs_method}\n")
-        if most_accurate_method:
-            f.write(f"- Most accurate method: {most_accurate_method}\n")
+        if most_accurate_method_f1:
+            f.write(f"- Most accurate method (F1 score): {most_accurate_method_f1}\n")
+        if most_accurate_method_sim:
+            f.write(f"- Most accurate method (Similarity precision): {most_accurate_method_sim}\n")
         
         f.write("\n## Method Comparison\n")
         method_summary['total_runtime'] = method_summary['total_runtime'].map('{:.2f}'.format)
         method_summary['similarity_pairs_count'] = method_summary['similarity_pairs_count'].map('{:.1f}'.format)
         f.write(method_summary.to_string(index=False))
+        
+        # Add accuracy comparison if available
+        if accuracy_df is not None and not accuracy_df.empty:
+            f.write("\n\n## Document Pair Accuracy (F1 Score)\n")
+            avg_f1 = accuracy_df.groupby('method')['f1_score'].mean().reset_index()
+            avg_f1['f1_score'] = avg_f1['f1_score'].map('{:.3f}'.format)
+            f.write(avg_f1.to_string(index=False))
+            
+        # Add similarity precision comparison if available
+        if similarity_precision_df is not None and not similarity_precision_df.empty:
+            f.write("\n\n## Similarity Value Precision\n")
+            avg_sim = similarity_precision_df.groupby('method')['similarity_precision'].mean().reset_index()
+            avg_sim['similarity_precision'] = avg_sim['similarity_precision'].map('{:.3f}'.format)
+            f.write(avg_sim.to_string(index=False))
         
         f.write("\n\n## Parameter Effects\n")
         for df in results_dfs:
@@ -750,7 +1059,31 @@ def create_summary_report(results_dfs, accuracy_df, output_dir):
                     if not method_df.empty:
                         best_runtime_idx = method_df['total_runtime'].idxmin()
                         best_value = method_df.loc[best_runtime_idx]['varied_value']
-                        f.write(f"- Best {param} value for {method}: {best_value}\n")
+                        f.write(f"- Best {param} value for {method} (runtime): {best_value}\n")
+                        
+                # Check if we have accuracy data for this parameter
+                if accuracy_df is not None and not accuracy_df.empty:
+                    param_accuracy = accuracy_df[accuracy_df['varied_param'] == param]
+                    if not param_accuracy.empty:
+                        f.write(f"\n#### Best {param} values for F1 score:\n")
+                        for method in param_accuracy['method'].unique():
+                            method_acc = param_accuracy[param_accuracy['method'] == method]
+                            if not method_acc.empty:
+                                best_acc_idx = method_acc['f1_score'].idxmax()
+                                best_value = method_acc.loc[best_acc_idx]['varied_value']
+                                f.write(f"- Best {param} value for {method} (F1 score): {best_value}\n")
+                                
+                # Check if we have similarity precision data for this parameter
+                if similarity_precision_df is not None and not similarity_precision_df.empty:
+                    param_precision = similarity_precision_df[similarity_precision_df['varied_param'] == param]
+                    if not param_precision.empty:
+                        f.write(f"\n#### Best {param} values for similarity precision:\n")
+                        for method in param_precision['method'].unique():
+                            method_prec = param_precision[param_precision['method'] == method]
+                            if not method_prec.empty:
+                                best_prec_idx = method_prec['similarity_precision'].idxmax()
+                                best_value = method_prec.loc[best_prec_idx]['varied_value']
+                                f.write(f"- Best {param} value for {method} (similarity precision): {best_value}\n")
     
     logging.info(f"Summary report created at {os.path.join(output_dir, 'summary_report.txt')}")
 
@@ -762,21 +1095,6 @@ def get_third_column_values(file_path):
     except Exception as e:
         print(f"Error: {e}")
         return []
-
-def get_precision(file_path,file_path2):
-    values1 = get_third_column_values(file_path)
-    values2 = get_third_column_values(file_path2)
-
-    #pa que no pete LUEGO MIRAR QUE HACER PARA COMPARACION CON los LSH fores bucket
-    if len(values1) != len(values2):
-        print("Error: The files have different lengths.")
-        sys.exit(1)
-
-    #calculo de la presicion para cada fila
-    values = [1 - abs(v1 - v2) for v1, v2 in zip(values1, values2)]
-    #average precision
-    prescision = sum(values) / len(values)
-    return prescision
 
 def precisions_files_var(csvs,char,values_to_try,mode):
             allpaths = csvs['similarity_csv']
