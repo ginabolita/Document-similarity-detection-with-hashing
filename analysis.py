@@ -8,6 +8,7 @@ from matplotlib.patches import Patch
 
 sns.set(style="whitegrid")
 
+
 # parse metadata that contains the name of the .csv
 def parse_fileMetadata(filename):
     filename = filename.replace('.csv', '')

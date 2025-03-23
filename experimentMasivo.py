@@ -31,13 +31,7 @@ def setup_logging():
                         filemode='w')
 
 
-def run_corpus_mode(executable_path,
-                    dataset_path,
-                    output_dir,
-                    k=None,
-                    t=None,
-                    b=None,
-                    thr=None):
+def run_corpus_mode(executable_path, dataset_path, output_dir, k=None, t=None, b=None, thr=None, run_idx=None):
     """Run corpus mode experiment"""
     cmd = [executable_path, dataset_path]
     
@@ -67,9 +61,7 @@ def run_corpus_mode(executable_path,
     # Handle specific parameter requirements for LSH bucketing and forest
     if 'LSHbucketing' in executable_path or 'LSHforest' in executable_path:
         if k is None or t is None or b is None or thr is None:
-            logging.error(
-                f"Error: {executable_path} requires k, t, b, and thr parameters."
-            )
+            logging.error(f"Error: {executable_path} requires k, t, b, and thr parameters.")
             return {
                 'dataset': dataset_path,
                 'output': f"Error: {executable_path} requires k, t, b, and thr parameters.",
@@ -93,19 +85,27 @@ def run_corpus_mode(executable_path,
 
     try:
         start_time = time.time()
-        # Execute the command
-        print(cmd)
         subprocess.run(cmd, capture_output=True, text=True, check=True)
         end_time = time.time()
 
-        # Log the run
-        logging.info(
-            f"Successfully ran corpus mode {executable_path} on {dataset_path}"
-        )
+        logging.info(f"Successfully ran corpus mode {executable_path} on {dataset_path}")
 
-        # Get output CSV files
-        similarity_csv = os.path.join(output_dir, f"{algo_type}/{algo_type}Similarities_{'_'.join(param_parts)}.csv")
-        times_csv = os.path.join(output_dir, f"{algo_type}/{algo_type}Times_{'_'.join(param_parts)}.csv")
+        # Define default output CSV file paths
+        similarity_csv_default = os.path.join(output_dir, f"{algo_type}/{algo_type}Similarities_{'_'.join(param_parts)}.csv")
+        times_csv_default = os.path.join(output_dir, f"{algo_type}/{algo_type}Times_{'_'.join(param_parts)}.csv")
+
+        # Rename files to include run_idx if provided
+        if run_idx is not None:
+            similarity_csv = similarity_csv_default.replace('.csv', f'_run{run_idx}.csv')
+            times_csv = times_csv_default.replace('.csv', f'_run{run_idx}.csv')
+            
+            if os.path.exists(similarity_csv_default):
+                os.rename(similarity_csv_default, similarity_csv)
+            if os.path.exists(times_csv_default):
+                os.rename(times_csv_default, times_csv)
+        else:
+            similarity_csv = similarity_csv_default
+            times_csv = times_csv_default
 
         return {
             'dataset': dataset_path,
@@ -117,12 +117,11 @@ def run_corpus_mode(executable_path,
             'k': k,
             't': t,
             'b': b,
-            'thr': thr
+            'thr': thr,
+            'run_idx': run_idx
         }
     except subprocess.CalledProcessError as e:
-        logging.error(
-            f"Error running corpus mode {executable_path}: {e}"
-        )
+        logging.error(f"Error running corpus mode {executable_path}: {e}")
         return {
             'dataset': dataset_path,
             'output': e.stderr,
@@ -132,7 +131,8 @@ def run_corpus_mode(executable_path,
             'k': k,
             't': t,
             'b': b,
-            'thr': thr
+            'thr': thr,
+            'run_idx': run_idx
         }
 
 def parse_csv_results(result):
@@ -229,50 +229,42 @@ def parse_csv_results(result):
 
 
 def run_parameter_experiment(bin, dataset_dir, output_dir, param_to_vary, 
-                            base_k=5, base_t=500, base_b=50, base_thr=0.3):
-    """Run experiments varying one parameter while fixing others"""
+                            base_k=5, base_t=500, base_b=50, base_thr=0.3, num_runs=30):
+    """Run experiments varying one parameter while fixing others, repeating each num_runs times"""
     results = []
     
-    # Convert base_b from percentage to actual value based on base_t
     base_b_value = int(base_t * (base_b / 100.0)) if base_b is not None else None
     
-    logging.info(f"Running experiment varying {param_to_vary}")
+    logging.info(f"Running experiment varying {param_to_vary} with {num_runs} runs per configuration")
     
     for exec_name, exec_path in bin.items():
         logging.info(f"Running {exec_name} with varying {param_to_vary}")
         
-        # Define which parameters to use based on algorithm type
         uses_t = exec_name != 'brute_force'
         uses_b = 'lsh' in exec_name
         uses_thr = exec_name not in ['minhash', 'lsh_basic', 'brute_force']
         
-        # Set parameter values for this algorithm
         k_val = base_k
         t_val = base_t if uses_t else None
         b_val = base_b_value if uses_b else None
         thr_val = base_thr
         
-        # Get parameter values to vary
         if param_to_vary == 'k':
             values_to_try = list(range(1, 15))
         elif param_to_vary == 't' and uses_t:
             values_to_try = list(range(100, 1001, 100))
         elif param_to_vary == 'b' and uses_b:
-            # Convert percentage to actual values
             values_to_try = [int(base_t * (pct / 100.0)) for pct in range(10, 101, 10)]
         elif param_to_vary == 'thr' and uses_thr:
             values_to_try = [round(x * 0.1, 1) for x in range(1, 10)]
         else:
-            values_to_try = []  # Skip if parameter doesn't apply to this algorithm
+            values_to_try = []
             
-        # Run experiments with varying parameter
         for val in values_to_try:
-            # Set the parameter to vary
             if param_to_vary == 'k':
                 k_val = val
             elif param_to_vary == 't':
                 t_val = val
-                # Update b since it depends on t
                 if uses_b:
                     b_val = int(val * (base_b / 100.0))
             elif param_to_vary == 'b':
@@ -280,29 +272,23 @@ def run_parameter_experiment(bin, dataset_dir, output_dir, param_to_vary,
             elif param_to_vary == 'thr':
                 thr_val = val
                 
-            # Run with current parameter values
-            result = run_corpus_mode(exec_path, dataset_dir, output_dir, 
-                                    k_val, t_val, b_val, thr_val)
-            
-            # Parse results
-            parsed_result = parse_csv_results(result)
-            parsed_result['similarity_pairs_count'] = len(parsed_result['similarity_pairs'])
-            parsed_result['varied_param'] = param_to_vary
-            parsed_result['varied_value'] = val
-            
-            results.append(parsed_result)
+            # Run the experiment num_runs times
+            for run_idx in range(1, num_runs + 1):
+                result = run_corpus_mode(exec_path, dataset_dir, output_dir, 
+                                        k_val, t_val, b_val, thr_val, run_idx)
+                
+                parsed_result = parse_csv_results(result)
+                parsed_result['similarity_pairs_count'] = len(parsed_result['similarity_pairs'])
+                parsed_result['varied_param'] = param_to_vary
+                parsed_result['varied_value'] = val
+                parsed_result['run_idx'] = run_idx
+                
+                results.append(parsed_result)
     
-    # Create DataFrame with results
     df = pd.DataFrame(results)
-    
-    # Save results to CSV
     results_file = os.path.join(output_dir, f"results_vary_{param_to_vary}.csv")
     df.to_csv(results_file, index=False)
-
-    # get csv from df
-    
     return df
-
 
 def prepare_datasets(mode, num_docs):
     """Prepare datasets based on mode"""
@@ -350,35 +336,25 @@ def prepare_datasets(mode, num_docs):
     
 
 def plot_parameter_comparison(results_df, param_name, metric_name, output_dir):
-    """
-    Plot performance comparison for varying parameter values
-    
-    Args:
-        results_df: DataFrame with experiment results
-        param_name: Parameter that was varied ('k', 't', 'b', 'thr')
-        metric_name: Metric to plot ('total_runtime', 'similarity_pairs_count', etc.)
-        output_dir: Directory to save the plot
-    """
+    """Plot performance comparison with means and std error bars for varying parameter values"""
     plt.figure(figsize=(10, 6))
     
-    # Get algorithms present in results
     algorithms = results_df['method'].unique()
     
     for algo in algorithms:
         algo_df = results_df[results_df['method'] == algo]
         if not algo_df.empty:
-            # Sort by parameter value for proper line plotting
-            algo_df = algo_df.sort_values(by='varied_value')
-            plt.plot(algo_df['varied_value'], algo_df[metric_name], marker='o', label=algo)
+            # Group by varied_value to compute mean and std
+            grouped = algo_df.groupby('varied_value')[metric_name].agg(['mean', 'std']).reset_index()
+            plt.errorbar(grouped['varied_value'], grouped['mean'], yerr=grouped['std'], 
+                         marker='o', label=algo, capsize=5)
     
-    # Set labels and title
     param_labels = {
         'k': 'Shingle Size (k)',
         't': 'Number of Hash Functions (t)',
         'b': 'Number of Bands (b)',
         'thr': 'Similarity Threshold'
     }
-    
     metric_labels = {
         'total_runtime': 'Total Runtime (ms)',
         'index_build_time': 'Index Build Time (ms)',
@@ -392,7 +368,6 @@ def plot_parameter_comparison(results_df, param_name, metric_name, output_dir):
     plt.grid(True, linestyle='--', alpha=0.7)
     plt.legend()
     
-    # Save the plot
     plot_file = os.path.join(output_dir, f'plot_{param_name}_{metric_name}.png')
     plt.savefig(plot_file)
     plt.close()
@@ -400,35 +375,14 @@ def plot_parameter_comparison(results_df, param_name, metric_name, output_dir):
     logging.info(f"Plot saved to {plot_file}")
     return plot_file
 
-
 def plot_algorithm_comparison(results_dfs, metric_name, output_dir):
-    """
-    Plot performance comparison across all algorithms for all parameter experiments
-    
-    Args:
-        results_dfs: List of DataFrames with results from different parameter experiments
-        metric_name: Metric to plot ('total_runtime', 'similarity_pairs_count', etc.)
-        output_dir: Directory to save the plot
-    """
     plt.figure(figsize=(12, 8))
+    combined_df = pd.concat(results_dfs, ignore_index=True)
     
-    # Combine results from all parameter experiments
-    combined_df = pd.concat(results_dfs)
-    
-    # Group by algorithm and calculate mean metric value
-    algo_summary = combined_df.groupby('method')[metric_name].mean().reset_index()
-    
-    # Sort by metric value for better visualization
-    algo_summary = algo_summary.sort_values(by=metric_name)
-    
-    # Create bar plot
-    bars = plt.bar(algo_summary['method'], algo_summary[metric_name])
-    
-    # Add value labels on top of bars
-    for bar in bars:
-        height = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2., height + 0.1,
-                f'{height:.2f}', ha='center', va='bottom')
+    # Boxplot with data points
+    sns.boxplot(x='method', y=metric_name, data=combined_df)
+    sns.stripplot(x='method', y=metric_name, data=combined_df, color="black", size=4, jitter=True)
+
     
     metric_labels = {
         'total_runtime': 'Average Runtime (ms)',
@@ -441,9 +395,7 @@ def plot_algorithm_comparison(results_dfs, metric_name, output_dir):
     plt.title(f'Algorithm Comparison: {metric_labels.get(metric_name, metric_name)}')
     plt.xticks(rotation=45)
     plt.grid(True, axis='y', linestyle='--', alpha=0.7)
-    plt.tight_layout()
     
-    # Save the plot
     plot_file = os.path.join(output_dir, f'algorithm_comparison_{metric_name}.png')
     plt.savefig(plot_file)
     plt.close()
@@ -530,11 +482,12 @@ def get_precision(file_path1, file_path2):
     
 def compare_accuracy(results_dfs, output_dir):
     """
-    Compare accuracy of algorithms against brute force (ground truth)
+    Compare accuracy of algorithms against brute force (ground truth) and plot results
+    as line plots with error bars.
     
     Args:
         results_dfs: List of DataFrames with results from different parameter experiments
-        output_dir: Directory to save the plot
+        output_dir: Directory to save the plots
     """
     # Find all brute force results to use as ground truth
     brute_force_results = []
@@ -554,7 +507,6 @@ def compare_accuracy(results_dfs, output_dir):
     ground_truth_pairs = set()
     for pairs in combined_bf['similarity_pairs']:
         if isinstance(pairs, list):
-            # Sort only the document IDs, exclude similarity from the tuple
             ground_truth_pairs.update(tuple(sorted((pair[0], pair[1]))) for pair in pairs)
     
     # Calculate precision and recall for each algorithm
@@ -565,7 +517,6 @@ def compare_accuracy(results_dfs, output_dir):
             if row['method'] != 'bruteForce':
                 algo_pairs = set()
                 if isinstance(row['similarity_pairs'], list):
-                    # Sort only the document IDs for consistency
                     algo_pairs = set(tuple(sorted((pair[0], pair[1]))) for pair in row['similarity_pairs'])
                 
                 # Calculate precision and recall if ground truth has pairs
@@ -587,20 +538,40 @@ def compare_accuracy(results_dfs, output_dir):
                 })
     
     # Create DataFrame for plotting
-    accuracy_df = pd.DataFrame(accuracy_results)
+    accuracy_df = pd.DataFrame(accuracy_results).reset_index(drop=True)
     
-    # Plot f1 scores for each algorithm across different parameter values
+    # Define styles for each method to match plot_* aesthetics
+    method_styles = {
+        'MinHash': {'color': 'blue', 'marker': 'D'},    # Diamond
+        'LSHbase': {'color': 'orange', 'marker': 's'},  # Square
+        'bucketing': {'color': 'green', 'marker': 'o'}, # Circle
+        'forest': {'color': 'red', 'marker': '^'}       # Triangle
+    }
+    
+    # Generate plots for each varied parameter
     for param in accuracy_df['varied_param'].unique():
         param_df = accuracy_df[accuracy_df['varied_param'] == param]
         
         plt.figure(figsize=(10, 6))
         
-        for algo in param_df['method'].unique():
-            algo_df = param_df[param_df['method'] == algo]
-            if not algo_df.empty:
-                algo_df = algo_df.sort_values(by='varied_value')
-                plt.plot(algo_df['varied_value'], algo_df['f1_score'], marker='o', label=algo)
+        # Plot each method
+        methods = param_df['method'].unique()
+        for method in methods:
+            style = method_styles.get(method, {'color': 'gray', 'marker': 'o'})  # Fallback style
+            method_df = param_df[param_df['method'] == method]
+            # Group by varied_value and compute mean and std of f1_score
+            grouped = method_df.groupby('varied_value')['f1_score'].agg(['mean', 'std']).reset_index()
+            plt.errorbar(
+                grouped['varied_value'],
+                grouped['mean'],
+                yerr=grouped['std'],
+                marker=style['marker'],
+                color=style['color'],
+                label=method,
+                capsize=5  # Size of error bar caps
+            )
         
+        # Set plot labels and styling to match plot_parameter_comparison
         param_labels = {
             'k': 'Shingle Size (k)',
             't': 'Number of Hash Functions (t)',
@@ -612,8 +583,7 @@ def compare_accuracy(results_dfs, output_dir):
         plt.ylabel('F1 Score')
         plt.title(f'F1 Score vs {param_labels.get(param, param)}')
         plt.grid(True, linestyle='--', alpha=0.7)
-        plt.legend()
-        plt.ylim(0, 1.05)
+        plt.legend(title='Method')  # Include legend with method title
         
         # Save the plot
         plot_file = os.path.join(output_dir, f'accuracy_{param}.png')
@@ -627,17 +597,17 @@ def compare_accuracy(results_dfs, output_dir):
 
 def compare_similarity_accuracy(results_dfs, output_dir, mode):
     """
-    Compare similarity values accuracy of algorithms against brute force (ground truth)
-    using both document pair matching and similarity value precision
+    Compare similarity accuracy of algorithms against brute force ground truth.
     
     Args:
-        results_dfs: List of DataFrames with results from different parameter experiments
-        output_dir: Directory to save plots
-        mode: Dataset mode ('real' or 'virtual')
-    """
-    logging.info("Comparing algorithm accuracy against brute force ground truth")
+        results_dfs (list): List of DataFrames with experiment results.
+        output_dir (str): Directory to save output CSV and plots.
+        mode (str): 'real' or 'virtual' (not used in this implementation).
     
-    # Get all similarity CSV paths for processing
+    Returns:
+        pd.DataFrame or None: DataFrame with precision results or None if no results.
+    """
+    # Step 1: Collect all similarity CSV paths into a nested dictionary
     all_similarity_csvs = {}
     for df in results_dfs:
         for _, row in df.iterrows():
@@ -645,181 +615,113 @@ def compare_similarity_accuracy(results_dfs, output_dir, mode):
                 method = row['method']
                 param = row['varied_param']
                 value = row['varied_value']
-                
-                if method not in all_similarity_csvs:
-                    all_similarity_csvs[method] = {}
-                
-                if param not in all_similarity_csvs[method]:
-                    all_similarity_csvs[method][param] = {}
-                    
-                all_similarity_csvs[method][param][value] = row['similarity_csv']
-    
-    # 1. First approach: Document pair matching (existing logic)
-    accuracy_results = compare_accuracy(results_dfs, output_dir)
-    
-    # 2. Second approach: Similarity value precision (friend's implementation, improved)
+                run_idx = row['run_idx']
+                all_similarity_csvs.setdefault(method, {}).setdefault(param, {}).setdefault(value, {})[run_idx] = row['similarity_csv']
+
+    # Step 2: Initialize list to store precision results
     similarity_precision_results = []
-    
-    # Process for each parameter type
+
+    # Define the base k value used for brute force when varying other parameters
+    base_k = 5  # Adjust this if your base k is different
+
+    # Step 3: Iterate over each parameter type
     for param in ['k', 't', 'b', 'thr']:
-        # Skip if we don't have this parameter variation
+        # Check if this parameter was varied in any DataFrame
         if not any(df['varied_param'].eq(param).any() for df in results_dfs):
             continue
-            
-        # Get the values we tried for this parameter
+        
+        # Concatenate all rows for this parameter and get unique values
         param_df = pd.concat([df[df['varied_param'] == param] for df in results_dfs])
         values_tried = sorted(param_df['varied_value'].unique())
-        
-        # Skip if no values to process
         if not values_tried:
             continue
-            
-        # Setup for storing results
-        minhash_precision = []
-        lsh_base_precision = []
-        lsh_bucketing_precision = []
-        lsh_forest_precision = []
-        
+
+        # Step 4: Process each varied value
         for value in values_tried:
-            # Find bruteForce file for this parameter value
+            # Select brute force file as ground truth
             bf_file = None
             if param == 'k':
-                # For k parameter, we look for bruteForce with matching k
-                if 'bruteForce' in all_similarity_csvs and param in all_similarity_csvs['bruteForce']:
-                    if value in all_similarity_csvs['bruteForce'][param]:
-                        bf_file = all_similarity_csvs['bruteForce'][param][value]
+                # For 'k', use the brute force file for that specific k value, run 1
+                if ('bruteForce' in all_similarity_csvs and 
+                    'k' in all_similarity_csvs['bruteForce'] and 
+                    value in all_similarity_csvs['bruteForce']['k']):
+                    bf_file = all_similarity_csvs['bruteForce']['k'][value][1]  # Use run 1
             else:
-                # For other parameters, we use the default bruteForce (usually with k=5)
-                default_k = 5
-                if 'bruteForce' in all_similarity_csvs and 'k' in all_similarity_csvs['bruteForce']:
-                    if default_k in all_similarity_csvs['bruteForce']['k']:
-                        bf_file = all_similarity_csvs['bruteForce']['k'][default_k]
-                else:
-                    # Fallback to looking for any bruteForce file
-                    bruteforce_files = []
-                    for method_files in all_similarity_csvs.values():
-                        for param_files in method_files.values():
-                            for file in param_files.values():
-                                if 'bruteForce' in file:
-                                    bruteforce_files.append(file)
-                    if bruteforce_files:
-                        bf_file = bruteforce_files[0]
-            
-            # Skip if no bruteForce file found
+                # For 't', 'b', 'thr', use the brute force file for the base k (e.g., k=5), run 1
+                if ('bruteForce' in all_similarity_csvs and 
+                    'k' in all_similarity_csvs['bruteForce'] and 
+                    base_k in all_similarity_csvs['bruteForce']['k']):
+                    bf_file = all_similarity_csvs['bruteForce']['k'][base_k][1]  # Use run 1
+
             if not bf_file or not os.path.exists(bf_file):
-                logging.warning(f"No bruteForce file found for {param}={value}, skipping precision calculation")
+                logging.warning(f"No bruteForce file found for {param}={value} (base k={base_k})")
                 continue
-                
-            # Calculate precision for each algorithm
-            for algo, name in [('MinHash', 'minhash_precision'), 
-                              ('LSHbase', 'lsh_base_precision'),
-                              ('bucketing', 'lsh_bucketing_precision'),
-                              ('forest', 'lsh_forest_precision')]:
-                
-                # Find the algorithm file for this parameter value
-                algo_file = None
-                if algo in all_similarity_csvs and param in all_similarity_csvs[algo]:
-                    if value in all_similarity_csvs[algo][param]:
-                        algo_file = all_similarity_csvs[algo][param][value]
-                
-                # Calculate precision if both files exist
-                precision = None
-                if algo_file and os.path.exists(algo_file):
-                    try:
-                        precision = get_precision(bf_file, algo_file)
-                        locals()[name].append(precision)
-                    except Exception as e:
-                        logging.error(f"Error calculating precision for {algo} with {param}={value}: {e}")
-                else:
-                    # Add None to maintain alignment with parameter values
-                    locals()[name].append(None)
-        
-        # Create precision plots
-        plt.figure(figsize=(10, 6))
-        algorithms = []
-        
-        for algo_name, precision_values, color, marker in [
-            ('MinHash', minhash_precision, 'blue', 'o'),
-            ('LSH Basic', lsh_base_precision, 'green', 's'),
-            ('LSH Bucketing', lsh_bucketing_precision, 'red', '^'),
-            ('LSH Forest', lsh_forest_precision, 'purple', 'D')
-        ]:
-            # Only plot if we have values
-            if precision_values and any(v is not None for v in precision_values):
-                valid_indices = [i for i, v in enumerate(precision_values) if v is not None]
-                valid_values = [precision_values[i] for i in valid_indices]
-                valid_params = [values_tried[i] for i in valid_indices]
-                
-                if valid_values:
-                    plt.plot(valid_params, valid_values, marker=marker, linestyle='-', 
-                             color=color, label=algo_name)
-                    algorithms.append(algo_name)
-                    
-                    # Save the precision values for this algorithm and parameter
-                    for val, prec in zip(valid_params, valid_values):
-                        similarity_precision_results.append({
-                            'method': algo_name,
-                            'varied_param': param,
-                            'varied_value': val,
-                            'similarity_precision': prec
-                        })
-        
-        if algorithms:  # Only save if we have data
-            param_labels = {
-                'k': 'Shingle Size (k)',
-                't': 'Number of Hash Functions (t)',
-                'b': 'Number of Bands (b)',
-                'thr': 'Similarity Threshold'
-            }
-            
-            plt.xlabel(param_labels.get(param, param))
-            plt.ylabel('Similarity Precision')
-            plt.title(f'Similarity Value Precision vs {param_labels.get(param, param)}')
-            plt.grid(True, linestyle='--', alpha=0.7)
-            plt.legend()
-            plt.ylim(0, 1.05)
-            
-            # Save the plot
-            plot_file = os.path.join(output_dir, f'similarity_precision_{param}.png')
-            plt.savefig(plot_file)
-            plt.close()
-            
-            logging.info(f"Similarity precision plot saved to {plot_file}")
-    
-    # Create a DataFrame with the precision results
+
+            # Step 5: Compare with approximate methods
+            for algo in ['MinHash', 'LSHbase', 'bucketing', 'forest']:
+                if (algo in all_similarity_csvs and 
+                    param in all_similarity_csvs[algo] and 
+                    value in all_similarity_csvs[algo][param]):
+                    run_files = all_similarity_csvs[algo][param][value]
+                    for run_idx, algo_file in run_files.items():
+                        if os.path.exists(algo_file):
+                            precision = get_precision(bf_file, algo_file)
+                            if precision is not None:
+                                similarity_precision_results.append({
+                                    'method': algo,
+                                    'varied_param': param,
+                                    'varied_value': value,
+                                    'run_idx': run_idx,
+                                    'similarity_precision': precision
+                                })
+
+    # Step 6: Process results if any
     if similarity_precision_results:
+        # Create DataFrame
         sim_precision_df = pd.DataFrame(similarity_precision_results)
         precision_csv = os.path.join(output_dir, 'similarity_precision_results.csv')
         sim_precision_df.to_csv(precision_csv, index=False)
         logging.info(f"Similarity precision results saved to {precision_csv}")
-        
-        # Create summary plot of average precision by method
-        avg_precision = sim_precision_df.groupby('method')['similarity_precision'].mean().reset_index()
-        
+
+        # Step 7: Create boxplots for each parameter
+        for param in ['k', 't', 'b', 'thr']:
+            param_df = sim_precision_df[sim_precision_df['varied_param'] == param]
+            if not param_df.empty:
+                plt.figure(figsize=(12, 6))
+                sns.boxplot(x='varied_value', y='similarity_precision', hue='method', data=param_df)
+                param_labels = {
+                    'k': 'Shingle Size (k)',
+                    't': 'Number of Hash Functions (t)',
+                    'b': 'Number of Bands (b)',
+                    'thr': 'Similarity Threshold'
+                }
+                plt.title(f'Similarity Precision vs {param_labels.get(param, param)}')
+                plt.xlabel(param_labels.get(param, param))
+                plt.ylabel('Similarity Precision')
+                plt.legend(title='Method')
+                plt.grid(True, linestyle='--', alpha=0.7)
+                plot_file = os.path.join(output_dir, f'similarity_precision_{param}.png')
+                plt.savefig(plot_file)
+                plt.close()
+                logging.info(f"Boxplot saved to {plot_file}")
+
+        # Step 8: Create overall boxplot by method
         plt.figure(figsize=(10, 6))
-        bars = plt.bar(avg_precision['method'], avg_precision['similarity_precision'], color=['blue', 'green', 'red', 'purple'])
-        
-        for bar in bars:
-            height = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width()/2., height + 0.01,
-                    f'{height:.3f}', ha='center', va='bottom')
-        
-        plt.xlabel('Algorithm')
-        plt.ylabel('Average Similarity Precision')
-        plt.title('Average Similarity Precision by Algorithm')
-        plt.ylim(0, 1.05)
-        plt.grid(axis='y', linestyle='--', alpha=0.7)
-        
-        # Save the plot
-        avg_plot_file = os.path.join(output_dir, 'avg_similarity_precision.png')
-        plt.savefig(avg_plot_file)
+        sns.boxplot(x='method', y='similarity_precision', data=sim_precision_df)
+        plt.title('Similarity Precision by Method')
+        plt.xlabel('Method')
+        plt.ylabel('Similarity Precision')
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plot_file = os.path.join(output_dir, 'similarity_precision_by_method.png')
+        plt.savefig(plot_file)
         plt.close()
-        
-        logging.info(f"Average similarity precision plot saved to {avg_plot_file}")
-        
+        logging.info(f"Boxplot saved to {plot_file}")
+
         return sim_precision_df
-    
+    else:
+        logging.warning("No similarity precision results generated.")
     return None
+
 
 def create_heatmap(csv_file, output_dir):
     """
@@ -919,7 +821,7 @@ def analyze_and_visualize_results(mode, experiment_types=['vary_k', 'vary_t', 'v
         
         if os.path.exists(results_file):
             try:
-                df = pd.read_csv(results_file)
+                df = pd.read_csv(results_file).reset_index(drop=True)
                 
                 # Convert similarity_pairs from string to actual lists if needed
                 if 'similarity_pairs' in df.columns and df['similarity_pairs'].dtype == 'object':
@@ -967,7 +869,10 @@ def analyze_and_visualize_results(mode, experiment_types=['vary_k', 'vary_t', 'v
             similarity_files = [f for f in os.listdir(similarity_dir) if f.endswith('.csv') and 'Similarities' in f]
             for sim_file in similarity_files:
                 sim_file_path = os.path.join(similarity_dir, sim_file)
-                create_heatmap(sim_file_path, viz_dir)
+                # only create heatmap for the first run
+                # check if the file is a first run file
+                if sim_file.endswith('1.csv'):
+                    create_heatmap(sim_file_path, viz_dir)
     
     # Generate a comprehensive summary report
     create_summary_report(results_dfs, accuracy_df, similarity_precision_df, output_dir)
@@ -975,50 +880,35 @@ def analyze_and_visualize_results(mode, experiment_types=['vary_k', 'vary_t', 'v
     logging.info(f"Analysis and visualization completed. Reports saved to {output_dir}")
 
 def create_summary_report(results_dfs, accuracy_df, similarity_precision_df, output_dir):
-    """
-    Create a comprehensive summary report with key findings
-    
-    Args:
-        results_dfs: List of DataFrames with experiment results
-        accuracy_df: DataFrame with document-pair accuracy results
-        similarity_precision_df: DataFrame with similarity value precision results
-        output_dir: Directory to save the report
-    """
     combined_df = pd.concat(results_dfs)
     
-    # Group by method and calculate averages
     method_summary = combined_df.groupby('method').agg({
-        'total_runtime': 'mean',
-        'index_build_time': 'mean',
-        'query_time': 'mean',
-        'similarity_pairs_count': 'mean'
+        'total_runtime': ['mean', 'std'],
+        'index_build_time': ['mean', 'std'],
+        'query_time': ['mean', 'std'],
+        'similarity_pairs_count': ['mean', 'std']
     }).reset_index()
+    method_summary.columns = ['method', 'runtime_mean', 'runtime_std', 'index_mean', 'index_std', 
+                             'query_mean', 'query_std', 'pairs_mean', 'pairs_std']
     
-    # Find the fastest method overall
-    fastest_method = method_summary.loc[method_summary['total_runtime'].idxmin()]['method']
-    
-    # Find the method that finds most similar pairs (after brute force)
+    fastest_method = method_summary.loc[method_summary['runtime_mean'].idxmin()]['method']
     non_bf_summary = method_summary[method_summary['method'] != 'bruteForce']
-    most_pairs_method = non_bf_summary.loc[non_bf_summary['similarity_pairs_count'].idxmax()]['method'] if not non_bf_summary.empty else None
+    most_pairs_method = non_bf_summary.loc[non_bf_summary['pairs_mean'].idxmax()]['method'] if not non_bf_summary.empty else None
     
-    # Calculate average F1 scores if accuracy data is available
     if accuracy_df is not None and not accuracy_df.empty:
         avg_accuracy = accuracy_df.groupby('method')['f1_score'].mean().reset_index()
         most_accurate_method_f1 = avg_accuracy.loc[avg_accuracy['f1_score'].idxmax()]['method']
     else:
         most_accurate_method_f1 = None
-        
-    # Calculate average similarity precision if available
+    
     if similarity_precision_df is not None and not similarity_precision_df.empty:
         avg_precision = similarity_precision_df.groupby('method')['similarity_precision'].mean().reset_index()
         most_accurate_method_sim = avg_precision.loc[avg_precision['similarity_precision'].idxmax()]['method']
     else:
         most_accurate_method_sim = None
     
-    # Create report
     with open(os.path.join(output_dir, 'summary_report.txt'), 'w') as f:
         f.write("# Document Similarity Methods Evaluation Summary\n\n")
-        
         f.write("## Overall Performance\n")
         f.write(f"- Fastest method: {fastest_method}\n")
         if most_pairs_method:
@@ -1028,10 +918,12 @@ def create_summary_report(results_dfs, accuracy_df, similarity_precision_df, out
         if most_accurate_method_sim:
             f.write(f"- Most accurate method (Similarity precision): {most_accurate_method_sim}\n")
         
-        f.write("\n## Method Comparison\n")
-        method_summary['total_runtime'] = method_summary['total_runtime'].map('{:.2f}'.format)
-        method_summary['similarity_pairs_count'] = method_summary['similarity_pairs_count'].map('{:.1f}'.format)
-        f.write(method_summary.to_string(index=False))
+        f.write("\n## Method Comparison (Mean ± Std)\n")
+        method_summary['runtime'] = method_summary.apply(
+            lambda row: f"{row['runtime_mean']:.2f} ± {row['runtime_std']:.2f}", axis=1)
+        method_summary['pairs'] = method_summary.apply(
+            lambda row: f"{row['pairs_mean']:.1f} ± {row['pairs_std']:.1f}", axis=1)
+        f.write(method_summary[['method', 'runtime', 'pairs']].to_string(index=False))
         
         # Add accuracy comparison if available
         if accuracy_df is not None and not accuracy_df.empty:
@@ -1087,6 +979,7 @@ def create_summary_report(results_dfs, accuracy_df, similarity_precision_df, out
     
     logging.info(f"Summary report created at {os.path.join(output_dir, 'summary_report.txt')}")
 
+
 def get_third_column_values(file_path):
     try:
         df = pd.read_csv(file_path)  
@@ -1096,49 +989,60 @@ def get_third_column_values(file_path):
         print(f"Error: {e}")
         return []
 
-def precisions_files_var(csvs,char,values_to_try,mode):
-            allpaths = csvs['similarity_csv']
-
-            bruteForce = sorted([path for path in allpaths if 'bruteForceSimilarities' in path])
-            LSHbase = sorted([path for path in allpaths if 'LSHbaseSimilarities' in path])
-            MinHash = sorted([path for path in allpaths if 'MinHashSimilarities' in path])
-                
-            print(MinHash)
+def precisions_files_var(csvs, char, values_to_try, mode):
+    allpaths = csvs['similarity_csv']
+    bruteForce = sorted([path for path in allpaths if 'bruteForceSimilarities' in path])
+    LSHbase = sorted([path for path in allpaths if 'LSHbaseSimilarities' in path])
+    MinHash = sorted([path for path in allpaths if 'MinHashSimilarities' in path])
+    
+    PrecisionMinHash = []
+    PrecisionLSHbase = []
+    
+    for k in values_to_try:
+        if char == 'k':
+            bruteForceK = [path for path in bruteForce if f'k{k}_run' in path]
+            MinHashK = [path for path in MinHash if f'k{k}_run' in path]
+            LSHbaseK = [path for path in LSHbase if f'k{k}_run' in path]
+        elif char == 't':
+            # Find bruteForce files with base k and any run index
+            if mode == "real":
+                brute_force_dir = 'results/real/bruteForce/'
+            else:
+                brute_force_dir = 'results/virtual/bruteForce/'
+            bruteForceK = [os.path.join(brute_force_dir, f) for f in os.listdir(brute_force_dir)
+                           if f.startswith('bruteForceSimilarities_k5_run')]
+            bruteForceK.sort()  # Ensure order
+            MinHashK = [path for path in MinHash if f't{k}_run' in path]
+            LSHbaseK = [path for path in LSHbase if f't{k}_run' in path]
+        else:
+            continue
+        
+        # Process each run index
+        for run_idx in range(1, len(MinHashK)+1):
+            # Find files with current run index
+            bf_run = [f for f in bruteForceK if f'_run{run_idx}.csv' in f]
+            mh_run = [f for f in MinHashK if f'_run{run_idx}.csv' in f]
+            lsh_run = [f for f in LSHbaseK if f'_run{run_idx}.csv' in f]
             
-            PrecisionMinHash = []
-            PrecisionLSHbase = []
+            if not bf_run or not mh_run or not lsh_run:
+                continue  # Skip missing runs
             
-            for k in values_to_try:
-                if (char == 'k'):
-                    bruteForceK = [path for path in bruteForce if f'k{k}' in path]
-                    MinHashK = [path for path in MinHash if f'k{k}' in path]
-                    LSHbaseK = [path for path in LSHbase if f'k{k}' in path]
-                
-                
-                if (char == 't'):
-                    if (mode == "real"):
-                        bruteForceK = 'results/real/bruteForce/bruteForceSimilarities_k5.csv'
-                    else:
-                        bruteForceK = 'results/virtual/bruteForce/bruteForceSimilarities_k5.csv'
-                    MinHashK = [path for path in MinHash if f't{k}' in path]
-                    LSHbaseK = [path for path in LSHbase if f't{k}' in path]
-
-                
-                bruteForceFile = bruteForceK[0]
-                
-                if (char == 't'):
-                    bruteForceFile = bruteForceK
+            bruteForceFile = bf_run[0]
+            MinHashFile = mh_run[0]
+            LSHbaseFile = lsh_run[0]
             
-                MinHashFile = MinHashK[0]   
-                LSHbaseFile = LSHbaseK[0]
+            resultMinHash = get_precision(bruteForceFile, MinHashFile)
+            resultLSHbase = get_precision(bruteForceFile, LSHbaseFile)
+            
+            PrecisionMinHash.append(resultMinHash)
+            PrecisionLSHbase.append(resultLSHbase)
+    
+    # Average results across runs
+    avg_MinHash = sum(PrecisionMinHash)/len(PrecisionMinHash) if PrecisionMinHash else 0
+    avg_LSHbase = sum(PrecisionLSHbase)/len(PrecisionLSHbase) if PrecisionLSHbase else 0
+    
+    return [avg_MinHash, avg_LSHbase]
 
-                resultMinHash = get_precision(bruteForceFile,MinHashFile)
-                resultLSHbase = get_precision(bruteForceFile,LSHbaseFile)
-                
-                PrecisionMinHash.append(resultMinHash)
-                PrecisionLSHbase.append(resultLSHbase)
-   
-            return [PrecisionMinHash,PrecisionLSHbase]
 
 def main():
     parser = argparse.ArgumentParser(
@@ -1178,6 +1082,10 @@ def main():
     parser.add_argument('--visualize',
                         action='store_true',
                         help='Generate visualizations after experiments')
+    parser.add_argument('--num_runs', 
+                        type=int,
+                        default=5,
+                        help='Number of runs for each experiment')
 
     args = parser.parse_args()
 
@@ -1208,7 +1116,7 @@ def main():
         if args.experiment_type == 'vary_k' or args.experiment_type == 'all':
             logging.info("Running experiment varying k...")
             csvs = run_parameter_experiment(bin, dataset_dir, output_dir, 'k', 
-                                    args.base_k, args.base_t, args.base_b, args.base_thr)
+                                    args.base_k, args.base_t, args.base_b, args.base_thr, args.num_runs)
             values_to_try = list(range(1, 15))
             # print(values_to_try)
             output = precisions_files_var(csvs,'k',values_to_try,args.mode)
@@ -1222,7 +1130,7 @@ def main():
         if args.experiment_type == 'vary_t' or args.experiment_type == 'all':
             logging.info("Running experiment varying t...")
             csvs = run_parameter_experiment(bin, dataset_dir, output_dir, 't', 
-                                    args.base_k, args.base_t, args.base_b, args.base_thr)
+                                    args.base_k, args.base_t, args.base_b, args.base_thr, args.num_runs)
             
             values_to_try = list(range(100, 1001, 100))
             # print(values_to_try)
@@ -1235,7 +1143,7 @@ def main():
         if args.experiment_type == 'vary_b' or args.experiment_type == 'all':
             logging.info("Running experiment varying b...")
             csvs = run_parameter_experiment(bin, dataset_dir, output_dir, 'b', 
-                                    args.base_k, args.base_t, args.base_b, args.base_thr)
+                                    args.base_k, args.base_t, args.base_b, args.base_thr, args.num_runs)
 
             
             
@@ -1243,7 +1151,7 @@ def main():
         if args.experiment_type == 'vary_thr' or args.experiment_type == 'all':
             logging.info("Running experiment varying threshold...")
             run_parameter_experiment(bin, dataset_dir, output_dir, 'thr', 
-                                    args.base_k, args.base_t, args.base_b, args.base_thr)
+                                    args.base_k, args.base_t, args.base_b, args.base_thr, args.num_runs)
 
         logging.info("Experiments completed successfully.")
     
