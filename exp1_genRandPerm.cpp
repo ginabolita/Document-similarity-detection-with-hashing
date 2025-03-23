@@ -194,6 +194,7 @@ vector<string> separaFrases(const string& text,
   return frases;
 }
 
+
 // Función para generar permutaciones aleatorias
 vector<string> permutabasicText(const vector<string>& frases,
                                 int numpermutaciones) {

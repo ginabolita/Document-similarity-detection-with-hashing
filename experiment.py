@@ -215,7 +215,9 @@ def parse_csv_results(result):
         'k': result['k'],
         't': result['t'],
         'b': result['b'],
-        'thr': result['thr']
+        'thr': result['thr'],
+        'similarity_csv': result['similarity_csv'],
+        'times_csv': result['times_csv']
     }
 
 
@@ -245,14 +247,14 @@ def run_parameter_experiment(bin, dataset_dir, output_dir, param_to_vary,
         
         # Get parameter values to vary
         if param_to_vary == 'k':
-            values_to_try = [3, 5, 7, 9]
+            values_to_try = list(range(1, 15))
         elif param_to_vary == 't' and uses_t:
-            values_to_try = [300, 500, 700]
+            values_to_try = list(range(100, 1001, 100))
         elif param_to_vary == 'b' and uses_b:
             # Convert percentage to actual values
-            values_to_try = [int(base_t * (pct / 100.0)) for pct in [30, 50, 70]]
+            values_to_try = [int(base_t * (pct / 100.0)) for pct in range(10, 101, 10)]
         elif param_to_vary == 'thr' and uses_thr:
-            values_to_try = [0.4, 0.5, 0.6]
+            values_to_try = [round(x * 0.1, 1) for x in range(1, 10)]
         else:
             values_to_try = []  # Skip if parameter doesn't apply to this algorithm
             
@@ -289,6 +291,8 @@ def run_parameter_experiment(bin, dataset_dir, output_dir, param_to_vary,
     # Save results to CSV
     results_file = os.path.join(output_dir, f"results_vary_{param_to_vary}.csv")
     df.to_csv(results_file, index=False)
+
+    # get csv from df
     
     return df
 
@@ -725,8 +729,12 @@ def main():
         # Run experiments based on the specified type
         if args.experiment_type == 'vary_k' or args.experiment_type == 'all':
             logging.info("Running experiment varying k...")
-            run_parameter_experiment(bin, dataset_dir, output_dir, 'k', 
+            csvs = run_parameter_experiment(bin, dataset_dir, output_dir, 'k', 
                                     args.base_k, args.base_t, args.base_b, args.base_thr)
+            
+            print(f"csvs: {csvs}")
+            print(f"time csvs: {csvs['times_csv']}")
+            print(f"sim csvs: {csvs['similarity_csv']}")
             
         if args.experiment_type == 'vary_t' or args.experiment_type == 'all':
             logging.info("Running experiment varying t...")
