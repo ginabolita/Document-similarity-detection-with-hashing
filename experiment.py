@@ -689,7 +689,7 @@ def analyze_and_visualize_results(mode, experiment_types=['vary_k', 'vary_t', 'v
     
     # Crear heatmaps a partir de los archivos de similitud
     # Buscar archivos CSV de similitud para cada algoritmo
-    for algo_type in ['bruteForce', 'MinHash', 'LSHbase', 'bucketing', 'forest']:
+    for algo_type in ['bruteForce', 'MinHash', 'LSHbase']:
         similarity_dir = os.path.join(output_dir, algo_type)
         if os.path.exists(similarity_dir):
             # Buscar archivos CSV de similitud
