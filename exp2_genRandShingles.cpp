@@ -99,25 +99,73 @@ unordered_set<string> generateShingles(const string& text) {
   return shingles;
 }
 
-// Calculate expected similarity based on formula
-// TODO: esto hace falta?
-double calculateExpectedSimilarity(int ni, int nj, int n) {
-  double pi = static_cast<double>(ni) / n;
-  double pj = static_cast<double>(nj) / n;
-  return (pi * pj) / (pi + pj - pi * pj);
+// Calculate Jaccard similarity between two sets
+double calculateJaccardSimilarity(const vector<string>& set1,
+                                  const vector<string>& set2) {
+  // Count intersection
+  int intersection = 0;
+  for (const auto& item : set1) {
+    if (find(set2.begin(), set2.end(), item) != set2.end()) {
+      intersection++;
+    }
+  }
+
+  // Union size = size of set1 + size of set2 - intersection
+  int unionSize = set1.size() + set2.size() - intersection;
+
+  // Return Jaccard similarity
+  return unionSize > 0 ? static_cast<double>(intersection) / unionSize : 0.0;
 }
 
-vector<string> selectQuantity(const unordered_set<string>& shingles,
-                              int quantity) {
-  vector<string> selectedShingles;
-  vector<string> shinglesVec(shingles.begin(), shingles.end());
+// Create a shared pool of shingles that will be used across documents
+vector<string> createSharedPool(const unordered_set<string>& allShingles,
+                                int sharedPoolSize) {
+  vector<string> shinglesVec(allShingles.begin(), allShingles.end());
   random_device rd;
   mt19937 gen(rd());
   shuffle(shinglesVec.begin(), shinglesVec.end(), gen);
 
-  selectedShingles.reserve(quantity);
-  for (int i = 0; i < quantity && i < shinglesVec.size(); ++i) {
-    selectedShingles.push_back(shinglesVec[i]);
+  // Take the first sharedPoolSize elements or all if less
+  int actualSize = min(sharedPoolSize, static_cast<int>(shinglesVec.size()));
+  return vector<string>(shinglesVec.begin(), shinglesVec.begin() + actualSize);
+}
+
+// Select shingles for a document with controlled randomness
+vector<string> selectShinglesWithSimilarity(
+    const vector<string>& sharedPool, const unordered_set<string>& allShingles,
+    int quantity, double sharedRatio) {
+  random_device rd;
+  mt19937 gen(rd());
+
+  // Calculate how many shingles to take from shared pool
+  int sharedCount = static_cast<int>(quantity * sharedRatio);
+  sharedCount = min(sharedCount, static_cast<int>(sharedPool.size()));
+
+  // Select random shingles from shared pool
+  vector<string> selectedShingles;
+  vector<string> sharedPoolCopy = sharedPool;  // Make a copy to shuffle
+  shuffle(sharedPoolCopy.begin(), sharedPoolCopy.end(), gen);
+  selectedShingles.insert(selectedShingles.end(), sharedPoolCopy.begin(),
+                          sharedPoolCopy.begin() + sharedCount);
+
+  // Fill the rest with random shingles from the remaining pool
+  int remainingCount = quantity - sharedCount;
+  if (remainingCount > 0) {
+    // Create a vector of all shingles excluding those already selected
+    vector<string> remainingShingles;
+    for (const auto& shingle : allShingles) {
+      if (find(selectedShingles.begin(), selectedShingles.end(), shingle) ==
+          selectedShingles.end()) {
+        remainingShingles.push_back(shingle);
+      }
+    }
+
+    // Shuffle and select from remaining shingles
+    shuffle(remainingShingles.begin(), remainingShingles.end(), gen);
+    int actualRemainingCount =
+        min(remainingCount, static_cast<int>(remainingShingles.size()));
+    selectedShingles.insert(selectedShingles.end(), remainingShingles.begin(),
+                            remainingShingles.begin() + actualRemainingCount);
   }
 
   return selectedShingles;
@@ -125,46 +173,60 @@ vector<string> selectQuantity(const unordered_set<string>& shingles,
 
 void generaDocumentos(const unordered_set<string>& shingles,
                       const string& path) {
-  vector<int> shingleCounts;  // Store counts for similarity calculation
-  int totalShingles = shingles.size();
   random_device rd;
   mt19937 gen(rd());
+  int totalShingles = shingles.size();
 
-  // Define a reasonable range based on total shingles available
-  int minShingles = max(10, totalShingles / 10);  // At least 10 or 10% of total
-  int maxShingles =
-      min(totalShingles * 8 / 10, totalShingles - 1);  // At most 80% of total
+  // Create a reasonably sized shared pool (e.g., 60% of all shingles)
+  int sharedPoolSize = totalShingles * 0.85;
+  vector<string> sharedPool = createSharedPool(shingles, sharedPoolSize);
+  cout << "Created shared pool with " << sharedPool.size() << " shingles"
+       << endl;
+
+  // Define parameters for document generation
+  int minShingles = max(50, totalShingles / 5);
+  int maxShingles = min(totalShingles * 9 / 10, totalShingles - 1);
   uniform_int_distribution<> dis(minShingles, maxShingles);
+
+  // Set the shared ratio (how much of each document comes from shared pool)
+  double sharedRatio = 0.7;  // 70% of shingles will be from shared pool
+
+  // Store generated documents for similarity calculation
+  vector<vector<string>> documents;
 
   for (int i = 0; i < D; ++i) {
     // Create a unique filename for each document
     string filename = path + "/docExp2_" + to_string(i + 1) + ".txt";
 
-    // Open file in write mode
+    // Determine how many shingles this document will have
+    int docShingleCount = dis(gen);
+
+    // Select shingles with controlled similarity
+    vector<string> selectedShingles = selectShinglesWithSimilarity(
+        sharedPool, shingles, docShingleCount, sharedRatio);
+
+    // Store for similarity calculation
+    documents.push_back(selectedShingles);
+
+    // Write to file
     ofstream file(filename);
     if (!file.is_open()) {
       cerr << "Error: Could not create file:" << filename << endl;
       continue;
     }
 
-    // Random quantity between minShingles and maxShingles
-    int randQuantity = dis(gen);
-    vector<string> selectedShingles = selectQuantity(shingles, randQuantity);
-    shingleCounts.push_back(randQuantity);
-
-    // Write selected shingles to file
     for (const string& shingle : selectedShingles) {
       file << shingle << endl;
     }
     file.close();
-    cout << "Generated file: " << filename << " with " << randQuantity
-         << " shingles" << endl;
+    cout << "Generated file: " << filename << " with "
+         << selectedShingles.size() << " shingles" << endl;
   }
 
-  // Generate similarity matrix report
+  // Generate similarity matrix using Jaccard similarity
   ofstream simMatrix("datasets/similarity_matrix.txt");
   if (simMatrix.is_open()) {
-    simMatrix << "Expected Similarity Matrix between documents:" << endl;
+    simMatrix << "Jaccard Similarity Matrix between documents:" << endl;
     simMatrix << "Total k-shingles in base set: " << totalShingles << endl
               << endl;
 
@@ -175,22 +237,40 @@ void generaDocumentos(const unordered_set<string>& shingles,
     }
     simMatrix << endl;
 
-    // Create similarity matrix
+    // Calculate and write actual Jaccard similarities
     for (int i = 0; i < D; ++i) {
       simMatrix << "Doc" << i + 1 << "\t";
       for (int j = 0; j < D; ++j) {
         if (i == j) {
           simMatrix << "1.000\t";  // Self-similarity is 1
         } else {
-          double similarity = calculateExpectedSimilarity(
-              shingleCounts[i], shingleCounts[j], totalShingles);
+          double similarity =
+              calculateJaccardSimilarity(documents[i], documents[j]);
           simMatrix << fixed << setprecision(3) << similarity << "\t";
         }
       }
       simMatrix << endl;
     }
+
+    // Calculate and report average similarity
+    double totalSimilarity = 0.0;
+    int pairCount = 0;
+    for (int i = 0; i < D; ++i) {
+      for (int j = i + 1; j < D; ++j) {
+        totalSimilarity +=
+            calculateJaccardSimilarity(documents[i], documents[j]);
+        pairCount++;
+      }
+    }
+    double averageSimilarity =
+        pairCount > 0 ? totalSimilarity / pairCount : 0.0;
+    simMatrix << endl
+              << "Average Jaccard similarity: " << fixed << setprecision(3)
+              << averageSimilarity << endl;
+
     simMatrix.close();
-    cout << "Generated similarity matrix" << endl;
+    cout << "Generated similarity matrix with average similarity: "
+         << averageSimilarity << endl;
   }
 }
 
