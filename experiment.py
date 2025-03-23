@@ -586,12 +586,20 @@ def create_heatmap(csv_file, output_dir):
         df['Doc2'] = df['Doc2'].astype(str)
         
         # Crear la matriz pivot
-        similarity_matrix = pd.pivot_table(df, values='Sim%', index='Doc1', columns='Doc2', fill_value=0)
+        similarity_matrix = pd.pivot_table(df, values='Sim%', index='Doc1', columns='Doc2', fill_value=0.5)
         
-        # Crear el heatmap
+        # Crear el heatmap con escala fija de 0 a 1
         plt.figure(figsize=(10, 8))
-        sns.heatmap(similarity_matrix, annot=False, fmt=".2f", cmap='coolwarm', cbar=True)
-        #poner anot a true si queremos los valores en las casillas (pero mejor que no)
+        sns.heatmap(
+            similarity_matrix,
+            annot=False,  # Cambiar a True si quieres valores en las casillas
+            fmt=".2f",
+            cmap='RdYlGn',
+            cbar=True,
+            vmin=0,  # Límite inferior de la escala
+            vmax=1   # Límite superior de la escala
+        )
+        
         # Configurar el título y las etiquetas
         plt.title(f'Heatmap de Similitud entre Documentos - {algo_type}{" " + params_part if params_part else ""}')
         plt.xlabel('Doc2')
