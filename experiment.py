@@ -67,7 +67,6 @@ def run_corpus_mode(executable_path,
 
     # Handle specific parameter requirements for LSH bucketing and forest
     if 'LSHbucketing' in executable_path or 'LSHforest' in executable_path:
-        logging.info("entra en if")
         if k is None or t is None or b is None or thr is None:
             logging.error(
                 f"Error: {executable_path} requires k, t, b, and thr parameters."
@@ -166,9 +165,9 @@ def parse_csv_results(result):
             if not similarity_df.empty:
                 # Assuming the CSV has columns for doc1, doc2, and similarity
                 for _, row in similarity_df.iterrows():
-                    # Adjust column names based on actual CSV format
-                    doc1 = row[0] if len(row) > 0 else None
-                    doc2 = row[1] if len(row) > 1 else None
+                    doc1 = row["Doc1"] if len(row) > 0 else None
+                    doc2 = row["Doc2"] if len(row) > 1 else None
+                    similarity = row["Sim%"] if len(row) > 2 else None
                     if doc1 is not None and doc2 is not None:
                         similar_pairs.append((str(doc1), str(doc2)))
             else:
@@ -186,8 +185,8 @@ def parse_csv_results(result):
             if not times_df.empty:
                 # Assuming the CSV has columns for task and time
                 for _, row in times_df.iterrows():
-                    task = row[0] if len(row) > 0 else ""
-                    time_value = row[1] if len(row) > 1 else None
+                    task = row["Operation"] if len(row) > 0 else ""
+                    time_value = row["Time(ms)"] if len(row) > 1 else None
                     
                     if isinstance(task, str):
                         if "index build" in task.lower() and time_value is not None:
@@ -337,6 +336,326 @@ def prepare_datasets(mode, num_docs):
             "runtime": None,
             "status": "error",
         }
+    
+
+def plot_parameter_comparison(results_df, param_name, metric_name, output_dir):
+    """
+    Plot performance comparison for varying parameter values
+    
+    Args:
+        results_df: DataFrame with experiment results
+        param_name: Parameter that was varied ('k', 't', 'b', 'thr')
+        metric_name: Metric to plot ('total_runtime', 'similar_pairs_count', etc.)
+        output_dir: Directory to save the plot
+    """
+    plt.figure(figsize=(10, 6))
+    
+    # Get algorithms present in results
+    algorithms = results_df['method'].unique()
+    
+    for algo in algorithms:
+        algo_df = results_df[results_df['method'] == algo]
+        if not algo_df.empty:
+            # Sort by parameter value for proper line plotting
+            algo_df = algo_df.sort_values(by='varied_value')
+            plt.plot(algo_df['varied_value'], algo_df[metric_name], marker='o', label=algo)
+    
+    # Set labels and title
+    param_labels = {
+        'k': 'Shingle Size (k)',
+        't': 'Number of Hash Functions (t)',
+        'b': 'Number of Bands (b)',
+        'thr': 'Similarity Threshold'
+    }
+    
+    metric_labels = {
+        'total_runtime': 'Total Runtime (ms)',
+        'index_build_time': 'Index Build Time (ms)',
+        'query_time': 'Query Time (ms)',
+        'similar_pairs_count': 'Number of Similar Pairs'
+    }
+    
+    plt.xlabel(param_labels.get(param_name, param_name))
+    plt.ylabel(metric_labels.get(metric_name, metric_name))
+    plt.title(f'Effect of {param_labels.get(param_name, param_name)} on {metric_labels.get(metric_name, metric_name)}')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend()
+    
+    # Save the plot
+    plot_file = os.path.join(output_dir, f'plot_{param_name}_{metric_name}.png')
+    plt.savefig(plot_file)
+    plt.close()
+    
+    logging.info(f"Plot saved to {plot_file}")
+    return plot_file
+
+
+def plot_algorithm_comparison(results_dfs, metric_name, output_dir):
+    """
+    Plot performance comparison across all algorithms for all parameter experiments
+    
+    Args:
+        results_dfs: List of DataFrames with results from different parameter experiments
+        metric_name: Metric to plot ('total_runtime', 'similar_pairs_count', etc.)
+        output_dir: Directory to save the plot
+    """
+    plt.figure(figsize=(12, 8))
+    
+    # Combine results from all parameter experiments
+    combined_df = pd.concat(results_dfs)
+    
+    # Group by algorithm and calculate mean metric value
+    algo_summary = combined_df.groupby('method')[metric_name].mean().reset_index()
+    
+    # Sort by metric value for better visualization
+    algo_summary = algo_summary.sort_values(by=metric_name)
+    
+    # Create bar plot
+    bars = plt.bar(algo_summary['method'], algo_summary[metric_name])
+    
+    # Add value labels on top of bars
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                f'{height:.2f}', ha='center', va='bottom')
+    
+    metric_labels = {
+        'total_runtime': 'Average Runtime (ms)',
+        'index_build_time': 'Average Index Build Time (ms)',
+        'query_time': 'Average Query Time (ms)',
+        'similar_pairs_count': 'Average Number of Similar Pairs'
+    }
+    
+    plt.ylabel(metric_labels.get(metric_name, metric_name))
+    plt.title(f'Algorithm Comparison: {metric_labels.get(metric_name, metric_name)}')
+    plt.xticks(rotation=45)
+    plt.grid(True, axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    
+    # Save the plot
+    plot_file = os.path.join(output_dir, f'algorithm_comparison_{metric_name}.png')
+    plt.savefig(plot_file)
+    plt.close()
+    
+    logging.info(f"Plot saved to {plot_file}")
+    return plot_file
+
+
+def compare_accuracy(results_dfs, output_dir):
+    """
+    Compare accuracy of algorithms against brute force (ground truth)
+    
+    Args:
+        results_dfs: List of DataFrames with results from different parameter experiments
+        output_dir: Directory to save the plot
+    """
+    # Find all brute force results to use as ground truth
+    brute_force_results = []
+    for df in results_dfs:
+        bf_df = df[df['method'] == 'bruteForce']
+        if not bf_df.empty:
+            brute_force_results.append(bf_df)
+    
+    if not brute_force_results:
+        logging.error("No brute force results found for accuracy comparison")
+        return
+    
+    # Combine all brute force results
+    combined_bf = pd.concat(brute_force_results)
+    
+    # Get a set of all similar pairs found by brute force (ground truth)
+    ground_truth_pairs = set()
+    for pairs in combined_bf['similar_pairs']:
+        if isinstance(pairs, list):
+            ground_truth_pairs.update(tuple(sorted(pair)) for pair in pairs)
+    
+    # Calculate precision and recall for each algorithm
+    accuracy_results = []
+    
+    for df in results_dfs:
+        for _, row in df.iterrows():
+            if row['method'] != 'bruteForce':
+                algo_pairs = set()
+                if isinstance(row['similar_pairs'], list):
+                    algo_pairs = set(tuple(sorted(pair)) for pair in row['similar_pairs'])
+                
+                # Calculate precision and recall if ground truth has pairs
+                if ground_truth_pairs:
+                    true_positives = len(algo_pairs.intersection(ground_truth_pairs))
+                    precision = true_positives / len(algo_pairs) if algo_pairs else 0
+                    recall = true_positives / len(ground_truth_pairs)
+                    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+                else:
+                    precision, recall, f1 = 0, 0, 0
+                
+                accuracy_results.append({
+                    'method': row['method'],
+                    'varied_param': row['varied_param'],
+                    'varied_value': row['varied_value'],
+                    'precision': precision,
+                    'recall': recall,
+                    'f1_score': f1
+                })
+    
+    # Create DataFrame for plotting
+    accuracy_df = pd.DataFrame(accuracy_results)
+    
+    # Plot f1 scores for each algorithm across different parameter values
+    for param in accuracy_df['varied_param'].unique():
+        param_df = accuracy_df[accuracy_df['varied_param'] == param]
+        
+        plt.figure(figsize=(10, 6))
+        
+        for algo in param_df['method'].unique():
+            algo_df = param_df[param_df['method'] == algo]
+            if not algo_df.empty:
+                algo_df = algo_df.sort_values(by='varied_value')
+                plt.plot(algo_df['varied_value'], algo_df['f1_score'], marker='o', label=algo)
+        
+        param_labels = {
+            'k': 'Shingle Size (k)',
+            't': 'Number of Hash Functions (t)',
+            'b': 'Number of Bands (b)',
+            'thr': 'Similarity Threshold'
+        }
+        
+        plt.xlabel(param_labels.get(param, param))
+        plt.ylabel('F1 Score')
+        plt.title(f'F1 Score vs {param_labels.get(param, param)}')
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.legend()
+        plt.ylim(0, 1.05)
+        
+        # Save the plot
+        plot_file = os.path.join(output_dir, f'accuracy_{param}.png')
+        plt.savefig(plot_file)
+        plt.close()
+        
+        logging.info(f"Accuracy plot saved to {plot_file}")
+    
+    return accuracy_df
+
+
+def analyze_and_visualize_results(mode, experiment_types=['vary_k', 'vary_t', 'vary_b', 'vary_thr']):
+    """
+    Analyze results from all experiments and generate visualization
+    
+    Args:
+        mode: Dataset mode ('real' or 'virtual')
+        experiment_types: List of experiment types to analyze
+    """
+    logging.info(f"Analyzing and visualizing results for {mode} mode")
+    
+    output_dir = os.path.join('results', mode)
+    results_dfs = []
+    
+    # Load result CSVs
+    for exp_type in experiment_types:
+        param = exp_type.split('_')[1]
+        results_file = os.path.join(output_dir, f"results_vary_{param}.csv")
+        
+        if os.path.exists(results_file):
+            try:
+                df = pd.read_csv(results_file)
+                
+                # Convert similar_pairs from string to actual lists if needed
+                if 'similar_pairs' in df.columns and df['similar_pairs'].dtype == 'object':
+                    df['similar_pairs'] = df['similar_pairs'].apply(eval)
+                
+                results_dfs.append(df)
+                logging.info(f"Loaded results from {results_file}")
+            except Exception as e:
+                logging.error(f"Error loading results from {results_file}: {e}")
+    
+    if not results_dfs:
+        logging.error("No result files found for analysis")
+        return
+    
+    # Create visualization directory
+    viz_dir = os.path.join(output_dir, 'visualizations')
+    os.makedirs(viz_dir, exist_ok=True)
+    
+    # Generate runtime comparison plots for each parameter variation
+    metrics = ['total_runtime', 'index_build_time', 'query_time', 'similar_pairs_count']
+    
+    for df in results_dfs:
+        if not df.empty:
+            param_name = df['varied_param'].iloc[0]
+            
+            for metric in metrics:
+                if metric in df.columns:
+                    plot_parameter_comparison(df, param_name, metric, viz_dir)
+    
+    # Generate algorithm comparison plots
+    for metric in metrics:
+        plot_algorithm_comparison(results_dfs, metric, viz_dir)
+    
+    # Compare accuracy against brute force
+    accuracy_df = compare_accuracy(results_dfs, viz_dir)
+    
+    # Save summary report
+    create_summary_report(results_dfs, accuracy_df, viz_dir)
+    
+    logging.info(f"Visualization completed. Results available in {viz_dir}")
+
+
+def create_summary_report(results_dfs, accuracy_df, output_dir):
+    """Create a summary report with key findings"""
+    combined_df = pd.concat(results_dfs)
+    
+    # Group by method and calculate averages
+    method_summary = combined_df.groupby('method').agg({
+        'total_runtime': 'mean',
+        'index_build_time': 'mean',
+        'query_time': 'mean',
+        'similar_pairs_count': 'mean'
+    }).reset_index()
+    
+    # Find the fastest method overall
+    fastest_method = method_summary.loc[method_summary['total_runtime'].idxmin()]['method']
+    
+    # Find the method that finds most similar pairs (after brute force)
+    non_bf_summary = method_summary[method_summary['method'] != 'bruteForce']
+    most_pairs_method = non_bf_summary.loc[non_bf_summary['similar_pairs_count'].idxmax()]['method'] if not non_bf_summary.empty else None
+    
+    # Calculate average F1 scores if accuracy data is available
+    if accuracy_df is not None and not accuracy_df.empty:
+        avg_accuracy = accuracy_df.groupby('method')['f1_score'].mean().reset_index()
+        most_accurate_method = avg_accuracy.loc[avg_accuracy['f1_score'].idxmax()]['method']
+    else:
+        most_accurate_method = None
+    
+    # Create report
+    with open(os.path.join(output_dir, 'summary_report.txt'), 'w') as f:
+        f.write("# Document Similarity Methods Evaluation Summary\n\n")
+        
+        f.write("## Overall Performance\n")
+        f.write(f"- Fastest method: {fastest_method}\n")
+        if most_pairs_method:
+            f.write(f"- Method finding most similar pairs: {most_pairs_method}\n")
+        if most_accurate_method:
+            f.write(f"- Most accurate method: {most_accurate_method}\n")
+        
+        f.write("\n## Method Comparison\n")
+        method_summary['total_runtime'] = method_summary['total_runtime'].map('{:.2f}'.format)
+        method_summary['similar_pairs_count'] = method_summary['similar_pairs_count'].map('{:.1f}'.format)
+        f.write(method_summary.to_string(index=False))
+        
+        f.write("\n\n## Parameter Effects\n")
+        for df in results_dfs:
+            if not df.empty:
+                param = df['varied_param'].iloc[0]
+                f.write(f"\n### Effect of varying {param}\n")
+                
+                # Find optimal parameter value for each method
+                for method in df['method'].unique():
+                    method_df = df[df['method'] == method]
+                    if not method_df.empty:
+                        best_runtime_idx = method_df['total_runtime'].idxmin()
+                        best_value = method_df.loc[best_runtime_idx]['varied_value']
+                        f.write(f"- Best {param} value for {method}: {best_value}\n")
+    
+    logging.info(f"Summary report created at {os.path.join(output_dir, 'summary_report.txt')}")
 
 
 def main():
@@ -354,7 +673,7 @@ def main():
                         action='store_true',
                         help='Prepare datasets before running experiments')
     parser.add_argument('--experiment_type',
-                        choices=['vary_k', 'vary_t', 'vary_b', 'vary_thr', 'all'],
+                        choices=['vary_k', 'vary_t', 'vary_b', 'vary_thr', 'all', 'analyze_only'],
                         default='all',
                         help='Type of experiment to run')
     # Base parameter values
@@ -374,6 +693,9 @@ def main():
                         type=float,
                         default=0.5,
                         help='Base value for threshold')
+    parser.add_argument('--visualize',
+                        action='store_true',
+                        help='Generate visualizations after experiments')
 
     args = parser.parse_args()
 
@@ -398,30 +720,43 @@ def main():
     output_dir = os.path.join('results', args.mode)
     os.makedirs(output_dir, exist_ok=True)
 
-    # Run experiments based on the specified type
-    if args.experiment_type == 'vary_k' or args.experiment_type == 'all':
-        logging.info("Running experiment varying k...")
-        run_parameter_experiment(bin, dataset_dir, output_dir, 'k', 
-                                args.base_k, args.base_t, args.base_b, args.base_thr)
-        
-    if args.experiment_type == 'vary_t' or args.experiment_type == 'all':
-        logging.info("Running experiment varying t...")
-        run_parameter_experiment(bin, dataset_dir, output_dir, 't', 
-                                args.base_k, args.base_t, args.base_b, args.base_thr)
-        
-    if args.experiment_type == 'vary_b' or args.experiment_type == 'all':
-        logging.info("Running experiment varying b...")
-        run_parameter_experiment(bin, dataset_dir, output_dir, 'b', 
-                                args.base_k, args.base_t, args.base_b, args.base_thr)
-        
-    if args.experiment_type == 'vary_thr' or args.experiment_type == 'all':
-        logging.info("Running experiment varying threshold...")
-        run_parameter_experiment(bin, dataset_dir, output_dir, 'thr', 
-                                args.base_k, args.base_t, args.base_b, args.base_thr)
+    # Skip running experiments if analyze_only is specified
+    if args.experiment_type != 'analyze_only':
+        # Run experiments based on the specified type
+        if args.experiment_type == 'vary_k' or args.experiment_type == 'all':
+            logging.info("Running experiment varying k...")
+            run_parameter_experiment(bin, dataset_dir, output_dir, 'k', 
+                                    args.base_k, args.base_t, args.base_b, args.base_thr)
+            
+        if args.experiment_type == 'vary_t' or args.experiment_type == 'all':
+            logging.info("Running experiment varying t...")
+            run_parameter_experiment(bin, dataset_dir, output_dir, 't', 
+                                    args.base_k, args.base_t, args.base_b, args.base_thr)
+            
+        if args.experiment_type == 'vary_b' or args.experiment_type == 'all':
+            logging.info("Running experiment varying b...")
+            run_parameter_experiment(bin, dataset_dir, output_dir, 'b', 
+                                    args.base_k, args.base_t, args.base_b, args.base_thr)
+            
+        if args.experiment_type == 'vary_thr' or args.experiment_type == 'all':
+            logging.info("Running experiment varying threshold...")
+            run_parameter_experiment(bin, dataset_dir, output_dir, 'thr', 
+                                    args.base_k, args.base_t, args.base_b, args.base_thr)
 
-    logging.info("Experiments completed successfully.")
-
-
+        logging.info("Experiments completed successfully.")
+    
+    # Generate visualizations if requested or if analyze_only
+    if args.visualize or args.experiment_type == 'analyze_only':
+        logging.info("Generating visualizations...")
+        
+        # Determine which experiment types to analyze
+        if args.experiment_type == 'all' or args.experiment_type == 'analyze_only':
+            experiment_types = ['vary_k', 'vary_t', 'vary_b', 'vary_thr']
+        else:
+            experiment_types = [args.experiment_type]
+        
+        analyze_and_visualize_results(args.mode, experiment_types)
+        logging.info("Visualization completed.")
 
 if __name__ == "__main__":
     main()
