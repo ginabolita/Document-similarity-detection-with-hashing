@@ -107,8 +107,6 @@ def run_corpus_mode(executable_path,
         similarity_csv = os.path.join(output_dir, f"{algo_type}/{algo_type}Similarities_{'_'.join(param_parts)}.csv")
         times_csv = os.path.join(output_dir, f"{algo_type}/{algo_type}Times_{'_'.join(param_parts)}.csv")
 
-        print(f"Output CSV files: {similarity_csv}, {times_csv}")
-
         return {
             'dataset': dataset_path,
             'similarity_csv': similarity_csv,
@@ -160,7 +158,6 @@ def parse_csv_results(result):
 
     # Parse similarity CSV if it exists
     try:
-        print(result['similarity_csv'])
         if os.path.exists(result['similarity_csv']):
             similarity_df = pd.read_csv(result['similarity_csv'])
             # Extract document pairs
@@ -816,10 +813,6 @@ def main():
             logging.info("Running experiment varying k...")
             csvs = run_parameter_experiment(bin, dataset_dir, output_dir, 'k', 
                                     args.base_k, args.base_t, args.base_b, args.base_thr)
-            
-            print(f"csvs: {csvs}")
-            print(f"time csvs: {csvs['times_csv']}")
-            print(f"sim csvs: {csvs['similarity_csv']}")
             
         if args.experiment_type == 'vary_t' or args.experiment_type == 'all':
             logging.info("Running experiment varying t...")

@@ -10,20 +10,17 @@
 #include <unordered_set>
 #include <vector>
 
-#include "deps/nlohmann/json.hpp"  // JSON library for parsing JSON files
+#include "deps/nlohmann/json.hpp"  // Incluye la biblioteca nlohmann/json
 using namespace std;
 using json = nlohmann::json;
 
 #ifdef _WIN32
-#include <direct.h>  // For _mkdir on Windows
+#include <direct.h>  // Para _mkdir en Windows
 #else
-#include <sys/stat.h>  // For mkdir on Unix-like systems
+#include <sys/stat.h>  // Para mkdir en Unix-like (Linux, macOS)
 #endif
 
-string delimiters =
-    ".!?,;:\"'…—()[]{}/\\*";  // Common delimiters for tokenization
-
-// Function to load stopwords from a JSON file
+// Function to load stopwords from JSON file
 unordered_set<string> loadStopwords(const string& filename) {
   unordered_set<string> stopwords;
   ifstream file(filename);
@@ -36,13 +33,13 @@ unordered_set<string> loadStopwords(const string& filename) {
 
   try {
     json jsonData;
-    file >> jsonData;  // Parse JSON file
+    file >> jsonData;
     file.close();
 
     if (jsonData.is_array()) {
       for (const auto& word : jsonData) {
         if (word.is_string()) {
-          stopwords.insert(word.get<string>());  // Add stopwords to the set
+          stopwords.insert(word.get<string>());
         }
       }
     } else {
@@ -55,8 +52,8 @@ unordered_set<string> loadStopwords(const string& filename) {
   return stopwords;
 }
 
-// Tokenization function to handle special cases like possessives, quotes, and
-// em dashes
+//  tokenization function to handle special cases like possessives,
+// quotes, and em dashes
 vector<string> improvedTokenization(const string& input) {
   vector<string> tokens;
   string currentToken;
@@ -67,16 +64,16 @@ vector<string> improvedTokenization(const string& input) {
     char nextChar = (i < input.length() - 1) ? input[i + 1] : '\0';
 
     // Handle quotes
-    if (c == '"' || c == '\'' || c == '`') {
+    if (c == '"' || c == '"' || c == '"') {
       if (!inQuotes) {
-        // Opening quote - save current token if not empty
+        // Opening quote - if we have a current token, save it
         if (!currentToken.empty()) {
           tokens.push_back(currentToken);
           currentToken.clear();
         }
         inQuotes = true;
       } else {
-        // Closing quote - save current token
+        // Closing quote - add the token with spaces
         inQuotes = false;
         if (!currentToken.empty()) {
           tokens.push_back(currentToken);
@@ -88,35 +85,46 @@ vector<string> improvedTokenization(const string& input) {
 
     // Handle possessives ('s or s')
     if (c == '\'' && (nextChar == 's' || (i > 0 && input[i - 1] == 's'))) {
-      currentToken += c;  // Keep apostrophe as part of the word
+      // Keep the apostrophe as part of the word
+      currentToken += c;
       continue;
     }
 
     // Handle em dash (—) or double hyphen (--)
     if (c == '—' || (c == '-' && nextChar == '-')) {
+      // End current token if not empty
       if (!currentToken.empty()) {
         tokens.push_back(currentToken);
         currentToken.clear();
       }
+
+      // Skip the second dash if it's a double hyphen
       if (c == '-' && nextChar == '-') {
-        i++;  // Skip the second hyphen
+        i++;
       }
+
+      // Add a space instead
       continue;
     }
 
     // Handle standard punctuation
     if (!inQuotes && !isalnum(c) && c != '\'' && c != '-' && !isspace(c)) {
+      // End current token if not empty
       if (!currentToken.empty()) {
         tokens.push_back(currentToken);
         currentToken.clear();
       }
+      // Don't add the punctuation
     } else if (isspace(c)) {
+      // Handle spaces - end current token
       if (!currentToken.empty()) {
         tokens.push_back(currentToken);
         currentToken.clear();
       }
     } else {
-      currentToken += c;  // Add alphanumeric, apostrophes, or hyphens
+      // Add alphanumeric, apostrophes, hyphens within words, or text within
+      // quotes
+      currentToken += c;
     }
   }
 
@@ -131,81 +139,85 @@ vector<string> improvedTokenization(const string& input) {
 // Function to clean text: remove unwanted punctuation, lowercase, and remove
 // stopwords
 string cleanText(const string& text, const unordered_set<string>& stopwords) {
-  vector<string> tokens = improvedTokenization(text);  // Tokenize text
+  // Use improved tokenization that handles special cases
+  vector<string> tokens = improvedTokenization(text);
+
+  // Join tokens with spaces
   string spaceSeparated;
   for (const string& token : tokens) {
-    spaceSeparated += token + " ";  // Join tokens with spaces
+    spaceSeparated += token + " ";
   }
 
+  // Convert to lowercase
   string lowercased;
   for (char c : spaceSeparated) {
-    lowercased += tolower(c);  // Convert to lowercase
+    lowercased += tolower(c);
   }
 
+  // Remove stopwords
   stringstream cleanedStream(lowercased);
   string word;
   string result;
 
   while (cleanedStream >> word) {
     if (stopwords.empty() || stopwords.find(word) == stopwords.end()) {
-      result += word + " ";  // Remove stopwords
+      // Keep meaningful words
+      result += word + " ";
     }
   }
 
+  // Trim trailing space if any
   if (!result.empty() && result.back() == ' ') {
-    result.pop_back();  // Trim trailing space
+    result.pop_back();
   }
 
   return result;
 }
 
-// Function to split text into sentences
+// Función para dividir el texto en frases
 vector<string> separaFrases(const string& text,
                             const unordered_set<string>& stopwords) {
   vector<string> frases;
-  string currentPhrase;
+  stringstream ss(text);
+  string phrase;
 
-  for (size_t i = 0; i < text.length(); i++) {
-    char c = text[i];
-    currentPhrase += c;
-
-    if (c == '.' || c == '!' || c == '?' || c == ',' || c == ':' || c == ';' ||
-        c == '"' || c == '\'') {
-      string cleanedPhrase = cleanText(currentPhrase, stopwords);
+  // Divide el texto en frases usando el punto como delimitador
+  while (getline(ss, phrase, '.')) {
+    if (!phrase.empty()) {
+      // Clean the phrase: remove punctuation, lowercase, and remove stopwords
+      string cleanedPhrase = cleanText(phrase, stopwords);
       if (!cleanedPhrase.empty()) {
-        frases.push_back(cleanedPhrase);  // Add cleaned phrase
+        frases.push_back(cleanedPhrase);
       }
-      currentPhrase = "";
     }
   }
-
-  if (!currentPhrase.empty()) {
-    string cleanedPhrase = cleanText(currentPhrase, stopwords);
-    if (!cleanedPhrase.empty()) {
-      frases.push_back(cleanedPhrase);  // Add remaining text
-    }
-  }
-
   return frases;
 }
 
-// Function to generate random permutations of sentences
+
+// Función para generar permutaciones aleatorias
 vector<string> permutabasicText(const vector<string>& frases,
                                 int numpermutaciones) {
   vector<string> permutaciones;
+
+  // Use consistent seed for reproducibility
   unsigned baseSeed = static_cast<unsigned>(time(0));
 
   for (int i = 0; i < numpermutaciones; ++i) {
-    mt19937 generator(baseSeed + i * 1000);  // Seed for reproducibility
-    vector<string> currentTemp = frases;
-    shuffle(currentTemp.begin(), currentTemp.end(),
-            generator);  // Shuffle sentences
+    // Create a deterministic but different seed for each permutation
+    mt19937 generator(baseSeed + i * 1000);
 
+    // Create a copy for this permutation
+    vector<string> currentTemp = frases;
+    shuffle(currentTemp.begin(), currentTemp.end(), generator);
+
+    // Build the shuffled text
     string shuffledText;
     for (const string& phrase : currentTemp) {
-      shuffledText += phrase + " ";  // Build shuffled text
+      shuffledText += phrase + " ";
     }
 
+    // Normalize spaces (remove consecutive spaces)
     string normalizedText;
     bool lastWasSpace = false;
     for (char c : shuffledText) {
@@ -220,8 +232,9 @@ vector<string> permutabasicText(const vector<string>& frases,
       }
     }
 
+    // Trim trailing space if any
     if (!normalizedText.empty() && normalizedText.back() == ' ') {
-      normalizedText.pop_back();  // Trim trailing space
+      normalizedText.pop_back();
     }
 
     permutaciones.push_back(normalizedText);
@@ -230,22 +243,27 @@ vector<string> permutabasicText(const vector<string>& frases,
   return permutaciones;
 }
 
-// Function to generate .txt documents
+// Función para generar documentos .txt
 void generaDocumentos(const vector<string>& permutaciones, const string& path) {
   for (int i = 0; i < permutaciones.size(); ++i) {
+    // Crea un nombre de archivo único para cada permutación
     string filename = path + "/docExp1_" + to_string(i + 1) + ".txt";
+
+    // Abre el archivo en modo de escritura
     ofstream file(filename);
     if (!file.is_open()) {
       cerr << "Error: Could not create file:" << filename << endl;
       continue;
     }
-    file << permutaciones[i];  // Write permutation to file
+
+    // Escribe la permutación en el archivo
+    file << permutaciones[i];
     file.close();
+
     cout << "Generated file: " << filename << endl;
   }
 }
 
-// Function to create a directory
 bool makeDirectory(const string& path) {
 #ifdef _WIN32
   return _mkdir(path.c_str()) == 0;
@@ -267,15 +285,18 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  // Load stopwords from external file
   unordered_set<string> stopwords = loadStopwords("stopwords-en.json");
   cout << "Loaded " << stopwords.size() << " stopwords from file" << endl;
 
+  // basicText.json contiene frases
   ifstream file("basicText.json");
   if (!file.is_open()) {
     cerr << "Error: Could not open JSON file." << endl;
     return 1;
   }
 
+  // parse json
   json jsonData;
   file >> jsonData;
   file.close();
@@ -288,6 +309,7 @@ int main(int argc, char* argv[]) {
   string basicText = jsonData["experimento_1"]["basicText"];
   vector<string> frases = separaFrases(basicText, stopwords);
 
+  // If no valid phrases were extracted, exit with an error
   if (frases.empty()) {
     cerr << "Error: No valid phrases were extracted from the text" << endl;
     return 1;
@@ -296,6 +318,7 @@ int main(int argc, char* argv[]) {
   vector<string> permutaciones = permutabasicText(frases, D);
   string path = "datasets/real";
 
+  // Crear la carpeta
   if (!makeDirectory(path)) {
     cerr << "Warning: The directory '" << path
          << "' exists or could not be created" << endl;
