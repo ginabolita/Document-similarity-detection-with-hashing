@@ -583,18 +583,31 @@ def create_heatmap(csv_file, output_dir):
         df['Doc2'] = df['Doc2'].astype(str)
         
         # Crear la matriz pivot
-        similarity_matrix = pd.pivot_table(df, values='Sim%', index='Doc1', columns='Doc2', fill_value=0.5)
+        similarity_matrix = pd.pivot_table(df, values='Sim%', index='Doc1', columns='Doc2', fill_value=0)
         
-        # Crear el heatmap con escala fija de 0 a 1
+        # Determinar el valor máximo de la matriz
+        max_value = similarity_matrix.max().max()  # Valor máximo en toda la matriz
+        
+        # Configurar el heatmap en función del valor máximo
+        if max_value <= 0.1:
+            # Si el valor máximo es 0.1 o menor, usar una paleta azul y vmax=0.1
+            cmap = 'gist_heat'
+            vmax = 0.1
+        else:
+            # De lo contrario, usar la paleta RdYlGn y vmax=1
+            cmap = 'RdYlGn'
+            vmax = 1
+        
+        # Crear el heatmap
         plt.figure(figsize=(10, 8))
         sns.heatmap(
             similarity_matrix,
             annot=False,  # Cambiar a True si quieres valores en las casillas
             fmt=".2f",
-            cmap='RdYlGn',
+            cmap=cmap,    # Paleta de colores (azul o RdYlGn)
             cbar=True,
-            vmin=0,  # Límite inferior de la escala
-            vmax=1   # Límite superior de la escala
+            vmin=0,       # Límite inferior de la escala
+            vmax=vmax     # Límite superior de la escala (0.1 o 1)
         )
         
         # Configurar el título y las etiquetas
@@ -673,7 +686,7 @@ def analyze_and_visualize_results(mode, experiment_types=['vary_k', 'vary_t', 'v
     
     # Crear heatmaps a partir de los archivos de similitud
     # Buscar archivos CSV de similitud para cada algoritmo
-    for algo_type in ['bruteForce', 'MinHash', 'LSHbase', 'bucketing', 'forest']:
+    for algo_type in ['bruteForce', 'MinHash', 'LSHbase']:
         similarity_dir = os.path.join(output_dir, algo_type)
         if os.path.exists(similarity_dir):
             # Buscar archivos CSV de similitud
