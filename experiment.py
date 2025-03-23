@@ -626,7 +626,6 @@ def create_heatmap(csv_file, output_dir):
         logging.error(f"Error al crear el heatmap: {e}")
         return None
 
-
 def analyze_and_visualize_results(mode, experiment_types=['vary_k', 'vary_t', 'vary_b', 'vary_thr']):
     """
     Analyze results from all experiments and generate visualization
@@ -697,7 +696,6 @@ def analyze_and_visualize_results(mode, experiment_types=['vary_k', 'vary_t', 'v
     
     logging.info(f"Summary report created at {os.path.join(output_dir, 'summary_report.txt')}")
 
-
 def create_summary_report(results_dfs, accuracy_df, output_dir):
     """Create a summary report with key findings"""
     combined_df = pd.concat(results_dfs)
@@ -756,6 +754,73 @@ def create_summary_report(results_dfs, accuracy_df, output_dir):
     
     logging.info(f"Summary report created at {os.path.join(output_dir, 'summary_report.txt')}")
 
+def get_third_column_values(file_path):
+    try:
+        df = pd.read_csv(file_path)  
+        third_column = df.iloc[:, 2].tolist()  
+        return third_column
+    except Exception as e:
+        print(f"Error: {e}")
+        return []
+
+def get_precision(file_path,file_path2):
+    values1 = get_third_column_values(file_path)
+    values2 = get_third_column_values(file_path2)
+
+    #pa que no pete LUEGO MIRAR QUE HACER PARA COMPARACION CON los LSH fores bucket
+    if len(values1) != len(values2):
+        print("Error: The files have different lengths.")
+        sys.exit(1)
+
+    #calculo de la presicion para cada fila
+    values = [1 - abs(v1 - v2) for v1, v2 in zip(values1, values2)]
+    #average precision
+    prescision = sum(values) / len(values)
+    return prescision
+
+def precisions_files_var(csvs,char,values_to_try,mode):
+            allpaths = csvs['similarity_csv']
+
+            bruteForce = sorted([path for path in allpaths if 'bruteForceSimilarities' in path])
+            LSHbase = sorted([path for path in allpaths if 'LSHbaseSimilarities' in path])
+            MinHash = sorted([path for path in allpaths if 'MinHashSimilarities' in path])
+                
+            print(MinHash)
+            
+            PrecisionMinHash = []
+            PrecisionLSHbase = []
+            
+            for k in values_to_try:
+                if (char == 'k'):
+                    bruteForceK = [path for path in bruteForce if f'k{k}' in path]
+                    MinHashK = [path for path in MinHash if f'k{k}' in path]
+                    LSHbaseK = [path for path in LSHbase if f'k{k}' in path]
+                
+                
+                if (char == 't'):
+                    if (mode == "real"):
+                        bruteForceK = 'results/real/bruteForce/bruteForceSimilarities_k5.csv'
+                    else:
+                        bruteForceK = 'results/virtual/bruteForce/bruteForceSimilarities_k5.csv'
+                    MinHashK = [path for path in MinHash if f't{k}' in path]
+                    LSHbaseK = [path for path in LSHbase if f't{k}' in path]
+
+                
+                bruteForceFile = bruteForceK[0]
+                
+                if (char == 't'):
+                    bruteForceFile = bruteForceK
+            
+                MinHashFile = MinHashK[0]   
+                LSHbaseFile = LSHbaseK[0]
+
+                resultMinHash = get_precision(bruteForceFile,MinHashFile)
+                resultLSHbase = get_precision(bruteForceFile,LSHbaseFile)
+                
+                PrecisionMinHash.append(resultMinHash)
+                PrecisionLSHbase.append(resultLSHbase)
+   
+            return [PrecisionMinHash,PrecisionLSHbase]
 
 def main():
     parser = argparse.ArgumentParser(
@@ -818,7 +883,7 @@ def main():
     dataset_dir = os.path.join('datasets', args.mode)
     output_dir = os.path.join('results', args.mode)
     os.makedirs(output_dir, exist_ok=True)
-
+    values_to_try = list()
     # Skip running experiments if analyze_only is specified
     if args.experiment_type != 'analyze_only':
         # Run experiments based on the specified type
@@ -826,16 +891,36 @@ def main():
             logging.info("Running experiment varying k...")
             csvs = run_parameter_experiment(bin, dataset_dir, output_dir, 'k', 
                                     args.base_k, args.base_t, args.base_b, args.base_thr)
+            values_to_try = list(range(1, 15))
+            # print(values_to_try)
+            output = precisions_files_var(csvs,'k',values_to_try,args.mode)
+            MinHasPrecisions = output[0]
+            LSHPrecision = output[1]
+            
+            
+            print(MinHasPrecisions)
+            print(LSHPrecision)
             
         if args.experiment_type == 'vary_t' or args.experiment_type == 'all':
             logging.info("Running experiment varying t...")
-            run_parameter_experiment(bin, dataset_dir, output_dir, 't', 
+            csvs = run_parameter_experiment(bin, dataset_dir, output_dir, 't', 
                                     args.base_k, args.base_t, args.base_b, args.base_thr)
+            
+            values_to_try = list(range(100, 1001, 100))
+            # print(values_to_try)
+            output = precisions_files_var(csvs,'t',values_to_try,args.mode)
+            MinHasPrecisions = output[0]
+            LSHPrecision = output[1]
+            print(MinHasPrecisions)
+            print(LSHPrecision)
             
         if args.experiment_type == 'vary_b' or args.experiment_type == 'all':
             logging.info("Running experiment varying b...")
-            run_parameter_experiment(bin, dataset_dir, output_dir, 'b', 
+            csvs = run_parameter_experiment(bin, dataset_dir, output_dir, 'b', 
                                     args.base_k, args.base_t, args.base_b, args.base_thr)
+
+            
+            
             
         if args.experiment_type == 'vary_thr' or args.experiment_type == 'all':
             logging.info("Running experiment varying threshold...")
