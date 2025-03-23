@@ -479,7 +479,7 @@ int main(int argc, char *argv[])
 
         // Initialize hash functions
         {
-            Timer timerInit("Initialize hash functions");
+            Timer timerInit("index build");
             initializeHashFunctions();
         }
 
@@ -488,7 +488,7 @@ int main(int argc, char *argv[])
         vector<pair<string, unordered_set<string>>> shingleSets;
 
         {
-            Timer timerProcess("Processing files");
+            Timer timerProcess("index build");
             for (const auto &file : files)
             {
                 // std::cout << "Processing file: " << file << std::endl;

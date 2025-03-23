@@ -314,26 +314,24 @@ int main(int argc, char *argv[])
   ss2 << "results/" << category << "/bruteForce/bruteForceTimes_k" << k << ".csv";
 
   std::string filename2 = ss2.str();
+ 
+  ofstream file(filename1);
+  if (!file.is_open())
   {
-    Timer writeTimer("Write Results to CSV");
-    ofstream file(filename1);
-    if (!file.is_open())
-    {
-      cerr << "Error: Unable to open file " << filename1 << " for writing" << endl;
-      return 1;
-    }
-
-    // Write header
-    file << "Doc1,Doc2,Sim%" << endl;
-
-    for (const auto &result : results)
-    {
-      file << result.doc1 << "," << result.doc2 << "," << fixed << setprecision(6) << result.similarity << endl;
-    }
-
-    file.close();
+    cerr << "Error: Unable to open file " << filename1 << " for writing" << endl;
+    return 1;
   }
 
+  // Write header
+  file << "Doc1,Doc2,Sim%" << endl;
+
+  for (const auto &result : results)
+  {
+    file << result.doc1 << "," << result.doc2 << "," << fixed << setprecision(6) << result.similarity << endl;
+  }
+
+  file.close();
+  
   ofstream fileTime(filename2);
   if (!fileTime.is_open())
   {

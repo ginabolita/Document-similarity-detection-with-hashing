@@ -777,7 +777,7 @@ int main(int argc, char *argv[]) {
 
   // Add documents to LSH buckets
   {
-    Timer timerLSH("query");
+    Timer timerLSH("index build");
     for (size_t i = 0; i < documents.size(); i++) {
       addToLSHBuckets(documents[i].signature, i, b);
     }
@@ -785,7 +785,7 @@ int main(int argc, char *argv[]) {
 
   // Find similar document pairs
   {
-    Timer timerFindSimilar("Finding similar documents");
+    Timer timerFindSimilar("query");
     similarPairs = findSimilarDocumentPairs(documents, b, SIMILARITY_THRESHOLD);
   }
 

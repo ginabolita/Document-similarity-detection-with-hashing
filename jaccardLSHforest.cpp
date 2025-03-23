@@ -641,14 +641,10 @@ std::string determineCategory(const std::string &inputDirectory)
 
 int main(int argc, char *argv[])
 {
-	// Start global timer for entire execution
-	auto startTime = chrono::high_resolution_clock::now();
 	vector<Document> documents;
 	string filename1,filename2, category;
-	
-	// Load stopwords
 	{
-		Timer timerStopwords("time");
+		Timer timerTotal("time");
 		stopwords = loadStopwords("stopwords-en.json");
 
 		// Check command line arguments
@@ -799,10 +795,6 @@ int main(int argc, char *argv[])
 		filename2 = ss2.str();
 	}
 	writeResultsToCSV(filename1, filename2, similarPairs, documents);
-
-	auto endTime = chrono::high_resolution_clock::now();
-	auto duration = chrono::duration_cast<chrono::milliseconds>(endTime - startTime);
-	cout << "time: " << duration.count() << " ms" << endl;
 
 	return 0;
 }

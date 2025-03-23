@@ -578,7 +578,7 @@ int main(int argc, char *argv[])
     // cout << "\nComparing files..." << endl;
 
     {
-      Timer timerInit("Compare all pairs of files Similarity + LSH");
+      Timer timerInit("query time");
       for (size_t i = 0; i < filePaths.size(); i++)
       {
         for (size_t j = i + 1; j < filePaths.size(); j++)

@@ -48,8 +48,6 @@ def run_corpus_mode(executable_path,
         param_parts.append(f"t{t}")
     if b is not None:
         param_parts.append(f"b{b}")
-    if thr is not None:
-        param_parts.append(f"threshold{thr}")
     
     # Determine algorithm type from executable path
     if 'BruteForce' in executable_path:
@@ -85,8 +83,12 @@ def run_corpus_mode(executable_path,
         cmd.append(str(t))
     if b is not None:
         cmd.append(str(b))
-    if thr is not None:
+    if thr is not None and algo_type in ['bucketing', 'forest']:
         cmd.append(str(thr))
+
+    # Only append threshold to filename for bucketing and forest
+    if algo_type in ['bucketing', 'forest'] and thr is not None:
+        param_parts.append(f"threshold{thr}")
 
     try:
         start_time = time.time()
@@ -134,13 +136,12 @@ def run_corpus_mode(executable_path,
             'thr': thr
         }
 
-
 def parse_csv_results(result):
     """Parse results from CSV files instead of output"""
     if result['status'] == 'error':
         return {
             'dataset': result['dataset'],
-            'similar_pairs': [],
+            'similarity_pairs': [],
             'index_build_time': None,
             'query_time': None,
             'total_runtime': result['runtime'],
@@ -152,7 +153,7 @@ def parse_csv_results(result):
             'thr': result['thr']
         }
 
-    similar_pairs = []
+    similarity_pairs = []
     index_build_time = None
     query_time = None
 
@@ -168,14 +169,18 @@ def parse_csv_results(result):
                     doc1 = row["Doc1"] if len(row) > 0 else None
                     doc2 = row["Doc2"] if len(row) > 1 else None
                     similarity = row["Sim%"] if len(row) > 2 else None
-                    if doc1 is not None and doc2 is not None:
-                        similar_pairs.append((str(doc1), str(doc2)))
+                    threshold = result['thr'] if result['thr'] is not None else None
+                    if threshold is None:
+                        print("=============== WARNING:  Threshold is None")
+                    if doc1 is not None and doc2 is not None and similarity is not None and similarity > threshold:
+                        similarity_pairs.append((str(doc1), str(doc2), similarity))
             else:
                 logging.error(f"No similar pairs found for {result['method']}")
         else:
             logging.error(f"Similarity CSV not found for {result['method']}")
     except Exception as e:
         logging.error(f"Error parsing similarity CSV: {e}")
+        print(f"Times CSV not found for: {result['similarity_csv']}")
 
     # Parse times CSV if it exists
     try:
@@ -195,18 +200,22 @@ def parse_csv_results(result):
                             query_time = float(time_value)
                         elif "time" in task.lower() and time_value is not None:
                             total_runtime = float(time_value)
+                        else:
+                            logging.error(f"Invalid task name in times CSV: {task}")
+                            print(f"Invalid task name in times CSV: {task}")
                     else:
                         logging.error(f"Invalid task name in times CSV: {task}")
             else:
                 logging.error(f"No timing information found for {result['method']}")
         else:
             logging.error(f"Times CSV not found for {result['method']}")
+            print(f"Times CSV not found for: {result['times_csv']}")
     except Exception as e:
         logging.error(f"Error parsing times CSV: {e}")
 
     return {
         'dataset': result['dataset'],
-        'similar_pairs': similar_pairs,
+        'similarity_pairs': similarity_pairs,
         'index_build_time': index_build_time,
         'query_time': query_time,
         'total_runtime': total_runtime,
@@ -243,7 +252,7 @@ def run_parameter_experiment(bin, dataset_dir, output_dir, param_to_vary,
         k_val = base_k
         t_val = base_t if uses_t else None
         b_val = base_b_value if uses_b else None
-        thr_val = base_thr if uses_thr else None
+        thr_val = base_thr
         
         # Get parameter values to vary
         if param_to_vary == 'k':
@@ -279,7 +288,7 @@ def run_parameter_experiment(bin, dataset_dir, output_dir, param_to_vary,
             
             # Parse results
             parsed_result = parse_csv_results(result)
-            parsed_result['similar_pairs_count'] = len(parsed_result['similar_pairs'])
+            parsed_result['similarity_pairs_count'] = len(parsed_result['similarity_pairs'])
             parsed_result['varied_param'] = param_to_vary
             parsed_result['varied_value'] = val
             
@@ -349,7 +358,7 @@ def plot_parameter_comparison(results_df, param_name, metric_name, output_dir):
     Args:
         results_df: DataFrame with experiment results
         param_name: Parameter that was varied ('k', 't', 'b', 'thr')
-        metric_name: Metric to plot ('total_runtime', 'similar_pairs_count', etc.)
+        metric_name: Metric to plot ('total_runtime', 'similarity_pairs_count', etc.)
         output_dir: Directory to save the plot
     """
     plt.figure(figsize=(10, 6))
@@ -376,7 +385,7 @@ def plot_parameter_comparison(results_df, param_name, metric_name, output_dir):
         'total_runtime': 'Total Runtime (ms)',
         'index_build_time': 'Index Build Time (ms)',
         'query_time': 'Query Time (ms)',
-        'similar_pairs_count': 'Number of Similar Pairs'
+        'similarity_pairs_count': 'Number of Similar Pairs'
     }
     
     plt.xlabel(param_labels.get(param_name, param_name))
@@ -400,7 +409,7 @@ def plot_algorithm_comparison(results_dfs, metric_name, output_dir):
     
     Args:
         results_dfs: List of DataFrames with results from different parameter experiments
-        metric_name: Metric to plot ('total_runtime', 'similar_pairs_count', etc.)
+        metric_name: Metric to plot ('total_runtime', 'similarity_pairs_count', etc.)
         output_dir: Directory to save the plot
     """
     plt.figure(figsize=(12, 8))
@@ -427,7 +436,7 @@ def plot_algorithm_comparison(results_dfs, metric_name, output_dir):
         'total_runtime': 'Average Runtime (ms)',
         'index_build_time': 'Average Index Build Time (ms)',
         'query_time': 'Average Query Time (ms)',
-        'similar_pairs_count': 'Average Number of Similar Pairs'
+        'similarity_pairs_count': 'Average Number of Similar Pairs'
     }
     
     plt.ylabel(metric_labels.get(metric_name, metric_name))
@@ -469,9 +478,10 @@ def compare_accuracy(results_dfs, output_dir):
     
     # Get a set of all similar pairs found by brute force (ground truth)
     ground_truth_pairs = set()
-    for pairs in combined_bf['similar_pairs']:
+    for pairs in combined_bf['similarity_pairs']:
         if isinstance(pairs, list):
-            ground_truth_pairs.update(tuple(sorted(pair)) for pair in pairs)
+            # Sort only the document IDs, exclude similarity from the tuple
+            ground_truth_pairs.update(tuple(sorted((pair[0], pair[1]))) for pair in pairs)
     
     # Calculate precision and recall for each algorithm
     accuracy_results = []
@@ -480,8 +490,9 @@ def compare_accuracy(results_dfs, output_dir):
         for _, row in df.iterrows():
             if row['method'] != 'bruteForce':
                 algo_pairs = set()
-                if isinstance(row['similar_pairs'], list):
-                    algo_pairs = set(tuple(sorted(pair)) for pair in row['similar_pairs'])
+                if isinstance(row['similarity_pairs'], list):
+                    # Sort only the document IDs for consistency
+                    algo_pairs = set(tuple(sorted((pair[0], pair[1]))) for pair in row['similarity_pairs'])
                 
                 # Calculate precision and recall if ground truth has pairs
                 if ground_truth_pairs:
@@ -539,7 +550,6 @@ def compare_accuracy(results_dfs, output_dir):
     
     return accuracy_df
 
-
 def analyze_and_visualize_results(mode, experiment_types=['vary_k', 'vary_t', 'vary_b', 'vary_thr']):
     """
     Analyze results from all experiments and generate visualization
@@ -562,9 +572,9 @@ def analyze_and_visualize_results(mode, experiment_types=['vary_k', 'vary_t', 'v
             try:
                 df = pd.read_csv(results_file)
                 
-                # Convert similar_pairs from string to actual lists if needed
-                if 'similar_pairs' in df.columns and df['similar_pairs'].dtype == 'object':
-                    df['similar_pairs'] = df['similar_pairs'].apply(eval)
+                # Convert similarity_pairs from string to actual lists if needed
+                if 'similarity_pairs' in df.columns and df['similarity_pairs'].dtype == 'object':
+                    df['similarity_pairs'] = df['similarity_pairs'].apply(eval)
                 
                 results_dfs.append(df)
                 logging.info(f"Loaded results from {results_file}")
@@ -580,7 +590,7 @@ def analyze_and_visualize_results(mode, experiment_types=['vary_k', 'vary_t', 'v
     os.makedirs(viz_dir, exist_ok=True)
     
     # Generate runtime comparison plots for each parameter variation
-    metrics = ['total_runtime', 'index_build_time', 'query_time', 'similar_pairs_count']
+    metrics = ['total_runtime', 'index_build_time', 'query_time', 'similarity_pairs_count']
     
     for df in results_dfs:
         if not df.empty:
@@ -612,7 +622,7 @@ def create_summary_report(results_dfs, accuracy_df, output_dir):
         'total_runtime': 'mean',
         'index_build_time': 'mean',
         'query_time': 'mean',
-        'similar_pairs_count': 'mean'
+        'similarity_pairs_count': 'mean'
     }).reset_index()
     
     # Find the fastest method overall
@@ -620,7 +630,7 @@ def create_summary_report(results_dfs, accuracy_df, output_dir):
     
     # Find the method that finds most similar pairs (after brute force)
     non_bf_summary = method_summary[method_summary['method'] != 'bruteForce']
-    most_pairs_method = non_bf_summary.loc[non_bf_summary['similar_pairs_count'].idxmax()]['method'] if not non_bf_summary.empty else None
+    most_pairs_method = non_bf_summary.loc[non_bf_summary['similarity_pairs_count'].idxmax()]['method'] if not non_bf_summary.empty else None
     
     # Calculate average F1 scores if accuracy data is available
     if accuracy_df is not None and not accuracy_df.empty:
@@ -642,7 +652,7 @@ def create_summary_report(results_dfs, accuracy_df, output_dir):
         
         f.write("\n## Method Comparison\n")
         method_summary['total_runtime'] = method_summary['total_runtime'].map('{:.2f}'.format)
-        method_summary['similar_pairs_count'] = method_summary['similar_pairs_count'].map('{:.1f}'.format)
+        method_summary['similarity_pairs_count'] = method_summary['similarity_pairs_count'].map('{:.1f}'.format)
         f.write(method_summary.to_string(index=False))
         
         f.write("\n\n## Parameter Effects\n")
