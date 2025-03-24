@@ -5,6 +5,7 @@ import logging
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns 
+import numpy as np
 import random
 import time
 from itertools import combinations
@@ -379,10 +380,29 @@ def plot_algorithm_comparison(results_dfs, metric_name, output_dir):
     plt.figure(figsize=(12, 8))
     combined_df = pd.concat(results_dfs, ignore_index=True)
     
-    # Boxplot with data points
-    sns.boxplot(x='method', y=metric_name, data=combined_df)
-    sns.stripplot(x='method', y=metric_name, data=combined_df, color="black", size=4, jitter=True)
-
+    # Create a copy of the dataframe to identify and filter outliers
+    filtered_df = combined_df.copy()
+    
+    # Filter outliers for each method group
+    methods = filtered_df['method'].unique()
+    for method in methods:
+        method_data = filtered_df.loc[filtered_df['method'] == method, metric_name]
+        q1 = method_data.quantile(0.25)
+        q3 = method_data.quantile(0.75)
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        
+        # Create a mask for non-outliers and apply it
+        outlier_mask = (method_data < lower_bound) | (method_data > upper_bound)
+        filtered_df.loc[(filtered_df['method'] == method) & outlier_mask, metric_name] = np.nan
+    
+    # Remove rows with NaN values for plotting
+    filtered_df = filtered_df.dropna(subset=[metric_name])
+    
+    # Boxplot with data points (filtered)
+    sns.boxplot(x='method', y=metric_name, data=combined_df, showfliers=False)
+    sns.stripplot(x='method', y=metric_name, data=filtered_df, color="black", size=4, jitter=True)
     
     metric_labels = {
         'total_runtime': 'Average Runtime (ms)',
