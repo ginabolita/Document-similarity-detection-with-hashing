@@ -46,27 +46,22 @@ Además, se generan **documentos virtuales** para poder experimentar la efectivi
    ```
 3. Ejecutar setup.sh:
 	```bash
-	    chmod +x setup.sh
-	    source setup.sh
+    chmod +x setup.sh
+    source setup.sh
 	```
 ---
 
-
 ## Uso
-### Generación de documentos virtuales
-- **Experimento 1**: Permutación de frases.
+ ### Bloques experimentales
+ 1. Ejemplo de ejecución completa de experimento 1:
   ```bash
-  ./exp1_genPermutedDoc <D>
+    python3 experimento.py --mode real --experiment_type all --num_docs 40 --prepare_datasets --visualize --num_runs 3 
   ```
-	Donde `<D>` es el número de documentos permutados a generar.
-- **Experimento 2**: Selección aleatoria de \( k \)-shingles.
+2. Ejemplo de ejecución completa de experimento 2:
   ```bash
-  ./exp2_genRandShingles <k> <D>
+    python3 experimento.py --mode virtual --experiment_type all --num_docs 40 --prepare_datasets --visualize --num_runs 3 
   ```
-  Donde `<k>` es el tamaño de los shingles.
-	Donde `<D>` es el número de documentos a generar.
-
-### Cálculo de similitud
+### Algoritmos implementados
 - **Fuerza bruta**:
   ```bash
   ./jaccardBruteForce <directory> <k>
