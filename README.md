@@ -44,18 +44,13 @@ Además, se generan **documentos virtuales** para poder experimentar la efectivi
    ```bash
    cd Proyecto2
    ```
-3. Instalar g++-13:
-   ```bash
-    sudo apt update
-    sudo apt install g++-13
-  ``` 
-4. Ejecutar setup.sh y make:
-  ```bash
-    chmod +x setup.sh
-    ./setup.sh
-    make
-  ```
+3. Ejecutar setup.sh:
+	```bash
+	    chmod +x setup.sh
+	    source setup.sh
+	```
 ---
+
 
 ## Uso
 ### Generación de documentos virtuales
@@ -74,22 +69,35 @@ Además, se generan **documentos virtuales** para poder experimentar la efectivi
 ### Cálculo de similitud
 - **Fuerza bruta**:
   ```bash
-  ./jaccardBruteForce <doc1> <doc2> <k>
+  ./jaccardBruteForce <directory> <k>
   ```
 	Donde `<k>` es el tamaño de los shingles.
 
 - **MinHashing**:
   ```bash
-  ./jaccardMinHash <doc1> <doc2> <k>
+  ./jaccardMinHash <directory> <k> <t>
   ```
 	Donde `<k>` es el tamaño de los shingles.
+  Donde `<t>` es el número de funciones hash.
 
-- **Locality-Sensitive Hashing (LSH)**:
+
+- **LSH bucketing**:
   ```bash
-  ./jaccardLSH <doc1> <doc2> <k> <b>
+  ./jaccardLSHbucketing  <corpus_dir> <k> <t> <b> <thr>
   ```
 	Donde `<k>` es el tamaño de los shingles.
+  Donde `<t>` es el número de funciones hash.
 	Donde `<b>`es el número de bandas.
+  Donde `<thr>` es el umbral.
+
+- **LSH forest**:
+  ```bash
+  ./jaccardLSHforest <corpus_dir> <k> <t> <b> <thr>
+  ```
+  Donde `<k>` es el tamaño de los shingles.
+  Donde `<t>` es el número de funciones hash.
+  Donde `<b>`es el número de bandas.
+  Donde `<thr>` es el umbral.
 
 ---
 
